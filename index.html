@@ -1,1 +1,287 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สถานะงานงดจ่ายไฟ — Shin-Chan Light Theme</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Shin-chan Light Palette */
+            --bg: #ffffff;
+            --surface: #f9f9f9;
+            --border: #e0e0e0;
+            --accent: #e63946; /* สีแดง */
+            --accent-yellow: #ffcc00; /* สีเหลืองสด */
+            --green: #27ae60;
+            --text: #2c3e50;
+            --text-muted: #7f8c8d;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Sarabun', sans-serif;
+            font-size: 15px;
+            min-height: 100vh;
+            background-image: radial-gradient(#f0f0f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; position: relative; }
+
+        /* Header Area */
+        .header {
+            border-bottom: 5px solid var(--accent-yellow);
+            padding-bottom: 24px;
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+        .header-title h1 { font-size: 28px; color: var(--accent); text-shadow: 1px 1px var(--accent-yellow); }
+        .header-title p { color: var(--text-muted); font-size: 14px; margin-top: 5px; font-weight: 600; }
+
+        /* Upload Section */
+        .upload-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .upload-card {
+            background: var(--surface);
+            border: 2px dashed var(--accent-yellow);
+            padding: 25px;
+            border-radius: 20px;
+            text-align: center;
+            transition: 0.3s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .upload-card:hover { border-color: var(--accent); background: #fff; }
+        .upload-card h3 { margin-bottom: 12px; font-size: 16px; color: var(--text); }
+        input[type="file"] { color: var(--text-muted); font-size: 13px; cursor: pointer; }
+
+        /* Action Button */
+        .btn-process {
+            width: 100%;
+            background: var(--accent-yellow);
+            color: #333;
+            border: 2px solid #333;
+            padding: 15px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            margin-bottom: 32px;
+            box-shadow: 0 5px 0 #333;
+            transition: 0.1s;
+        }
+        .btn-process:active { transform: translateY(4px); box-shadow: none; }
+        .btn-process:hover { background: #ffd633; }
+
+        /* Stats Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 0 var(--border);
+        }
+        .stat-num { font-size: 36px; font-weight: 700; font-family: 'JetBrains Mono', monospace; margin-bottom: 5px; }
+        .stat-label { font-size: 13px; color: var(--text-muted); font-weight: 600; }
+        
+        .stat-card.total { border-color: var(--accent-yellow); color: #856404; background: #fffdf5; }
+        .stat-card.match { border-color: var(--green); color: var(--green); background: #f0fff4; }
+        .stat-card.mismatch { border-color: var(--accent); color: var(--accent); background: #fff5f5; }
+
+        /* Table */
+        .table-wrap {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid var(--border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: var(--accent-yellow); color: #333; padding: 15px; text-align: left; font-size: 13px; font-weight: 800; text-transform: uppercase; border-bottom: 2px solid #333; }
+        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #fff9e6; }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid transparent;
+        }
+        .badge-match { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+        .badge-mismatch { background: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+
+        .pea-no { font-family: 'JetBrains Mono', monospace; color: var(--accent); font-weight: 600; }
+
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 12px;
+            border-top: 2px solid var(--accent-yellow);
+            padding-top: 20px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="header-title">
+            <h1>สถานะงานงดจ่ายไฟ 🐘</h1>
+            <p>ระบบตรวจสอบข้อมูล DMSX เปรียบเทียบกับ SAP (Shin-chan Light Edition)</p>
+        </div>
+    </div>
+
+    <div class="upload-grid">
+        <div class="upload-card">
+            <h3>📂 ข้อมูลจาก DMSX</h3>
+            <input type="file" id="fileDmsx" accept=".csv">
+        </div>
+        <div class="upload-card">
+            <h3>📂 ข้อมูลจาก SAP</h3>
+            <input type="file" id="fileSap" accept=".csv">
+        </div>
+    </div>
+
+    <button class="btn-process" onclick="processData()">มาเริ่มตรวจสอบกันเล้ยยย!</button>
+
+    <div id="resultSection" style="display: none;">
+        <div class="summary-grid">
+            <div class="stat-card total">
+                <div class="stat-num" id="countDmsx">0</div>
+                <div class="stat-label">DMSX ทั้งหมด</div>
+            </div>
+            <div class="stat-card total">
+                <div class="stat-num" id="countSap">0</div>
+                <div class="stat-label">SAP ทั้งหมด</div>
+            </div>
+            <div class="stat-card match">
+                <div class="stat-num" id="countMatch">0</div>
+                <div class="stat-label">ตรงกัน (เย้!)</div>
+            </div>
+            <div class="stat-card mismatch">
+                <div class="stat-num" id="countMismatch">0</div>
+                <div class="stat-label">ไม่ตรงกัน (ว้า...)</div>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th>หมายเลขผู้ใช้ไฟ</th>
+                        <th>PEA No</th>
+                        <th>สถานะ (DMSX)</th>
+                        <th>สถานะ (SAP)</th>
+                        <th>ผลการตรวจสอบ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="footer">
+        © 2026 ระบบตรวจสอบสถานะงานงดจ่ายไฟ · กฟฟ.นากลาง · ธีมชินจังจอมแก่น
+    </div>
+</div>
+
+<script>
+    // ส่วน Logic JavaScript คงเดิมเพื่อให้ระบบทำงานได้ถูกต้อง
+    let dataDmsx = [];
+    let dataSap = [];
+
+    function parseCSV(text) {
+        const lines = text.split('\n').filter(l => l.trim() !== "");
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        return lines.slice(1).map(line => {
+            const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+            let obj = {};
+            headers.forEach((h, i) => obj[h] = values[i]);
+            return obj;
+        });
+    }
+
+    function readFiles(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(parseCSV(e.target.result));
+            reader.readAsText(file);
+        });
+    }
+
+    async function processData() {
+        const f1 = document.getElementById('fileDmsx').files[0];
+        const f2 = document.getElementById('fileSap').files[0];
+
+        if (!f1 || !f2) {
+            alert("ใส่ไฟล์ไม่ครบ ชินจังไม่ปลื้มนะคร้าบบบ!");
+            return;
+        }
+
+        dataDmsx = await readFiles(f1);
+        dataSap = await readFiles(f2);
+        compareAndDisplay();
+    }
+
+    function compareAndDisplay() {
+        let matchCount = 0;
+        let mismatchCount = 0;
+        const tbody = document.querySelector("#resultTable tbody");
+        tbody.innerHTML = "";
+
+        dataDmsx.forEach(d => {
+            const sMatch = dataSap.find(s => s['หมายเลขผู้ใช้ไฟ'] === d['หมายเลขผู้ใช้ไฟ']);
+            
+            if (sMatch) {
+                const isMatch = (d['สถานะการงดจ่ายมิเตอร์'] === sMatch['สถานะการงดจ่ายมิเตอร์'] && d['Pea No'] === sMatch['Pea No']);
+                if (isMatch) matchCount++; else mismatchCount++;
+
+                const row = `
+                    <tr>
+                        <td>${d['หมายเลขผู้ใช้ไฟ']}</td>
+                        <td><span class="pea-no">${d['Pea No']}</span></td>
+                        <td>${d['สถานะการงดจ่ายมิเตอร์']}</td>
+                        <td>${sMatch['สถานะการงดจ่ายมิเตอร์']}</td>
+                        <td>
+                            <span class="badge ${isMatch ? 'badge-match' : 'badge-mismatch'}">
+                                ${isMatch ? '✓ ตรงกัน' : '✗ ไม่ตรงกัน'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            }
+        });
+
+        document.getElementById('countDmsx').innerText = dataDmsx.length;
+        document.getElementById('countSap').innerText = dataSap.length;
+        document.getElementById('countMatch').innerText = matchCount;
+        document.getElementById('countMismatch').innerText = mismatchCount;
+        document.getElementById('resultSection').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
 
