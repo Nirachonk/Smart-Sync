@@ -78,7 +78,7 @@
             </div>
             <div class="stat-card" style="color: var(--danger)">
                 <span class="stat-value" id="countMismatch">0</span>
-                <small>ไม่ตรงกัน (Human Error)</small>
+                <small>ข้อมูลไม่ตรงกัน</small>
             </div>
         </div>
 
@@ -238,15 +238,15 @@
         }
 
         if (sourceType === "sap") {
-            if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
-            if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
-            if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
+            if (normalizedStatus.includes("ปลดสาย")) return { label: "ปลดสาย", color: "#FF4D4F" };
+            if (normalizedStatus.includes("ต่อสาย")) return { label: "ต่อสาย", color: "#52C41A" };
+            if (normalizedStatus.includes("ผ่อน")) return { label: "ผ่อนผัน", color: "#FAAD14" };
             return normalizeValue(status);
         }
 
-        if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
-        if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
-        if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
+        if (normalizedStatus.includes("ปลดสาย")) return { label: "ปลดสาย", color: "#FF4D4F" };
+        if (normalizedStatus.includes("ต่อสาย")) return { label: "ต่อสาย", color: "#52C41A" };
+        if (normalizedStatus.includes("ผ่อน")) return { label: "ผ่อนผัน", color: "#FAAD14" };
         if (normalizedStatus.includes("ระงับ")) return "ระงับ";
         return normalizeValue(status);
     }
