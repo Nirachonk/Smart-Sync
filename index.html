@@ -78,7 +78,7 @@
             </div>
             <div class="stat-card" style="color: var(--danger)">
                 <span class="stat-value" id="countMismatch">0</span>
-                <small>ข้อมูลไม่ตรงกัน</small>
+                <small>ไม่ตรงกัน</small>
             </div>
         </div>
 
@@ -238,15 +238,15 @@
         }
 
         if (sourceType === "sap") {
-            if (normalizedStatus.includes("ปลดสาย")) return { label: "ปลดสาย", color: "#FF4D4F" };
-            if (normalizedStatus.includes("ต่อสาย")) return { label: "ต่อสาย", color: "#52C41A" };
-            if (normalizedStatus.includes("ผ่อน")) return { label: "ผ่อนผัน", color: "#FAAD14" };
+            if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
+            if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
+            if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
             return normalizeValue(status);
         }
 
-        if (normalizedStatus.includes("ปลดสาย")) return { label: "ปลดสาย", color: "#FF4D4F" };
-        if (normalizedStatus.includes("ต่อสาย")) return { label: "ต่อสาย", color: "#52C41A" };
-        if (normalizedStatus.includes("ผ่อน")) return { label: "ผ่อนผัน", color: "#FAAD14" };
+        if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
+        if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
+        if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
         if (normalizedStatus.includes("ระงับ")) return "ระงับ";
         return normalizeValue(status);
     }
@@ -435,6 +435,12 @@
         document.getElementById('countMismatch').innerText = misCount;
         document.getElementById('resultView').style.display = 'block';
     }
+    thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+}
 </script>
 
 </body>
