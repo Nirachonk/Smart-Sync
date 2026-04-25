@@ -25,37 +25,38 @@
         .card-upload:hover { border-color: var(--primary-purple); }
         .card-upload h3 { margin-bottom: 1rem; color: var(--primary-purple); }
 
-        /* ปุ่มหลัก + ปุ่ม Reset */
         .btn-row { display: flex; gap: 1rem; align-items: stretch; margin-bottom: 0; }
         .btn-main { flex: 1; background: var(--primary-purple); color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Sarabun', sans-serif; }
         .btn-main:hover { background: #5b21b6; transform: translateY(-2px); }
         .btn-reset { background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0; padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Sarabun', sans-serif; white-space: nowrap; }
         .btn-reset:hover { background: #fee2e2; border-color: #ef4444; color: #991b1b; transform: translateY(-2px); }
 
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0; }
+        /* Summary cards */
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0 1rem; }
         .stat-card { background: white; padding: 1.2rem; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .stat-value { font-size: 1.8rem; font-weight: 700; display: block; }
 
-        /* ตาราง + sticky header */
-        .table-container {
-            background: white;
-            border-radius: 12px;
-            overflow: auto;
-            max-height: 60vh;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-            position: relative;
-        }
+        /* Breakdown panels */
+        .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .breakdown-panel { background: white; border-radius: 12px; padding: 1.2rem 1.4rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .breakdown-panel h4 { margin: 0 0 0.8rem; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
+        .h4-match { color: #166534; }
+        .h4-mismatch { color: #991b1b; }
+        .breakdown-row { display: flex; justify-content: space-between; align-items: center; padding: 0.35rem 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.9rem; }
+        .breakdown-row:last-child { border-bottom: none; }
+        .breakdown-count { font-weight: 700; font-size: 1rem; min-width: 2rem; text-align: right; }
+        .empty-breakdown { color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 0.5rem 0; }
+
+        /* Export button row */
+        .action-row { display: flex; justify-content: flex-end; margin-bottom: 0.75rem; }
+        .btn-export { background: #166534; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Sarabun', sans-serif; display: flex; align-items: center; gap: 0.4rem; }
+        .btn-export:hover { background: #14532d; transform: translateY(-1px); }
+
+        /* Table */
+        .table-container { background: white; border-radius: 12px; overflow: auto; max-height: 60vh; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         thead tr { position: sticky; top: 0; z-index: 10; }
-        th {
-            background: #ede9fe;
-            padding: 1rem;
-            text-align: left;
-            color: #4c1d95;
-            font-weight: 700;
-            border-bottom: 2px solid #c4b5fd;
-            white-space: nowrap;
-        }
+        th { background: #ede9fe; padding: 1rem; text-align: left; color: #4c1d95; font-weight: 700; border-bottom: 2px solid #c4b5fd; white-space: nowrap; }
         td { padding: 1rem; border-bottom: 1px solid #f1f5f9; }
         tr:hover td { background: #faf5ff; }
 
@@ -63,19 +64,15 @@
         .badge-success { background: #dcfce7; color: #166534; }
         .badge-error   { background: #fee2e2; color: #991b1b; }
 
-        /* ไฮไลท์สถานะ */
-        .status-pill {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            white-space: nowrap;
+        .status-pill { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+        .status-plad    { background: #fee2e2; color: #991b1b; }
+        .status-tor     { background: #dcfce7; color: #166534; }
+        .status-phaawn  { background: #fef9c3; color: #854d0e; }
+        .status-default { background: #f1f5f9; color: #475569; }
+
+        @media (max-width: 600px) {
+            .breakdown-grid { grid-template-columns: 1fr; }
         }
-        .status-plad    { background: #fee2e2; color: #991b1b; }   /* ปลดสาย — แดง */
-        .status-tor     { background: #dcfce7; color: #166534; }   /* ต่อสาย  — เขียว */
-        .status-phaawn  { background: #fef9c3; color: #854d0e; }   /* ผ่อนผัน — เหลือง */
-        .status-default { background: #f1f5f9; color: #475569; }   /* อื่นๆ */
     </style>
 </head>
 <body>
@@ -103,6 +100,8 @@
     </div>
 
     <div id="resultView" style="display: none;">
+
+        <!-- ตัวเลขสรุป -->
         <div class="summary-grid">
             <div class="stat-card">
                 <span class="stat-value" id="countDmsx">0</span>
@@ -118,8 +117,25 @@
             </div>
             <div class="stat-card" style="color: var(--danger)">
                 <span class="stat-value" id="countMismatch">0</span>
-                <small>ข้อมูลไม่ตรงกัน</small>
+                <small>ไม่ตรงกัน (Human Error)</small>
             </div>
+        </div>
+
+        <!-- Breakdown แยกสถานะ -->
+        <div class="breakdown-grid">
+            <div class="breakdown-panel">
+                <h4 class="h4-match">✅ ตรงกัน — แยกตามสถานะ SAP</h4>
+                <div id="breakdownMatch"><p class="empty-breakdown">—</p></div>
+            </div>
+            <div class="breakdown-panel">
+                <h4 class="h4-mismatch">❌ ไม่ตรงกัน — แยกตามสถานะ SAP</h4>
+                <div id="breakdownMismatch"><p class="empty-breakdown">—</p></div>
+            </div>
+        </div>
+
+        <!-- ปุ่ม Export + ตาราง -->
+        <div class="action-row">
+            <button class="btn-export" onclick="exportToXLS()">⬇ Export เป็น XLS</button>
         </div>
 
         <div class="table-container">
@@ -161,7 +177,10 @@
         }
     };
 
-    /* ── ฟังก์ชัน Reset ── */
+    // เก็บข้อมูลดิบไว้ใช้ Export
+    let exportRows = [];
+
+    /* ── Reset ── */
     function resetPage() {
         document.getElementById('fileSap').value = '';
         document.getElementById('fileDmsx').value = '';
@@ -170,10 +189,13 @@
         ['countDmsx','countSap','countMatch','countMismatch'].forEach(id => {
             document.getElementById(id).innerText = '0';
         });
+        document.getElementById('breakdownMatch').innerHTML = '<p class="empty-breakdown">—</p>';
+        document.getElementById('breakdownMismatch').innerHTML = '<p class="empty-breakdown">—</p>';
+        exportRows = [];
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    /* ── ฟังก์ชัน status pill ── */
+    /* ── Status pill (แสดงผล) ── */
     function statusPill(text) {
         if (!text) return '<span class="status-pill status-default">—</span>';
         const t = text.trim();
@@ -184,7 +206,52 @@
         return `<span class="status-pill ${cls}">${t}</span>`;
     }
 
-    /* ── ฟังก์ชันเดิม (ไม่เปลี่ยน logic) ── */
+    /* ── Breakdown panel ── */
+    function renderBreakdown(containerId, countMap) {
+        const el = document.getElementById(containerId);
+        const entries = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
+        if (!entries.length) { el.innerHTML = '<p class="empty-breakdown">ไม่มีรายการ</p>'; return; }
+
+        const STATUS_COLOR = {
+            'ปลดสาย': '#991b1b',
+            'ต่อสาย':  '#166534',
+            'ผ่อนผัน': '#854d0e',
+        };
+
+        el.innerHTML = entries.map(([status, count]) => {
+            const color = STATUS_COLOR[status] || '#475569';
+            return `<div class="breakdown-row">
+                <span>${statusPill(status)}</span>
+                <span class="breakdown-count" style="color:${color}">${count} ราย</span>
+            </div>`;
+        }).join('');
+    }
+
+    /* ── Export XLS ── */
+    function exportToXLS() {
+        if (!exportRows.length) { alert("ไม่มีข้อมูลให้ส่งออก"); return; }
+
+        const wsData = [
+            ["หมายเลขผู้ใช้ไฟ", "Pea No", "สถานะ (SAP)", "สถานะ (DMSx)", "ผลลัพธ์"],
+            ...exportRows.map(r => [r.customerId, r.peaNo, r.sapStatus, r.dmsxStatus, r.result])
+        ];
+
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+        // กำหนดความกว้างคอลัมน์
+        ws['!cols'] = [
+            { wch: 20 }, { wch: 18 }, { wch: 16 }, { wch: 16 }, { wch: 14 }
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws, "ผลการตรวจสอบ");
+
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+        XLSX.writeFile(wb, `ผลตรวจสอบ_${dateStr}.xlsx`);
+    }
+
+    /* ── File parsing ── */
     function parseHtmlTableToJson(htmlText) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(htmlText, "text/html");
@@ -291,8 +358,9 @@
         return { rows: allRows, missingColumns };
     }
 
+    /* ── Main process ── */
     async function processData() {
-        const sapFiles = document.getElementById('fileSap').files;
+        const sapFiles  = document.getElementById('fileSap').files;
         const dmsxFiles = document.getElementById('fileDmsx').files;
 
         if (!sapFiles.length || !dmsxFiles.length) {
@@ -311,11 +379,15 @@
         }
 
         let mCount = 0, misCount = 0;
+        const matchStatusCount = {};    // นับแยกสถานะ สำหรับ "ตรงกัน"
+        const mismatchStatusCount = {}; // นับแยกสถานะ สำหรับ "ไม่ตรงกัน"
+
         const tbody = document.querySelector("#resultTable tbody");
         tbody.innerHTML = "";
+        exportRows = [];
 
         const dmsxIndex = new Map();
-        dataDmsx.forEach((dmsxItem, index) => {
+        dataDmsx.forEach(dmsxItem => {
             const key = buildMatchKey(
                 findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.customerNo),
                 findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.peaNo)
@@ -324,7 +396,7 @@
             if (!dmsxIndex.has(key)) dmsxIndex.set(key, dmsxItem);
         });
 
-        dataSap.forEach((sapItem) => {
+        dataSap.forEach(sapItem => {
             const sapId        = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.customerNo);
             const sapPea       = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.peaNo);
             const sapStatusRaw = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.status);
@@ -332,32 +404,52 @@
             const matchKey     = buildMatchKey(sapId, sapPea);
             const dmsxItem     = dmsxIndex.get(matchKey);
 
-            if (dmsxItem) {
-                const dmsxStatusRaw = findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.status);
-                const dmsxStatus    = simplifyStatus(dmsxStatusRaw, "dmsx");
-                const isMatch       = (sapStatus === dmsxStatus);
-                isMatch ? mCount++ : misCount++;
+            if (!dmsxItem) return;
 
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr>
-                        <td>${sapId}</td>
-                        <td style="font-family:monospace"><b>${sapPea}</b></td>
-                        <td>${statusPill(sapStatus)}</td>
-                        <td>${statusPill(dmsxStatus)}</td>
-                        <td>
-                            <span class="badge ${isMatch ? 'badge-success' : 'badge-error'}">
-                                ${isMatch ? '✓ ตรงกัน' : '✗ ไม่ตรงกัน'}
-                            </span>
-                        </td>
-                    </tr>`
-                );
+            const dmsxStatusRaw = findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.status);
+            const dmsxStatus    = simplifyStatus(dmsxStatusRaw, "dmsx");
+            const isMatch       = (sapStatus === dmsxStatus);
+
+            if (isMatch) {
+                mCount++;
+                matchStatusCount[sapStatus] = (matchStatusCount[sapStatus] || 0) + 1;
+            } else {
+                misCount++;
+                mismatchStatusCount[sapStatus] = (mismatchStatusCount[sapStatus] || 0) + 1;
             }
+
+            // เก็บสำหรับ Export
+            exportRows.push({
+                customerId: sapId,
+                peaNo: sapPea,
+                sapStatus,
+                dmsxStatus,
+                result: isMatch ? 'ตรงกัน' : 'ไม่ตรงกัน'
+            });
+
+            tbody.insertAdjacentHTML('beforeend', `
+                <tr>
+                    <td>${sapId}</td>
+                    <td style="font-family:monospace"><b>${sapPea}</b></td>
+                    <td>${statusPill(sapStatus)}</td>
+                    <td>${statusPill(dmsxStatus)}</td>
+                    <td>
+                        <span class="badge ${isMatch ? 'badge-success' : 'badge-error'}">
+                            ${isMatch ? '✓ ตรงกัน' : '✗ ไม่ตรงกัน'}
+                        </span>
+                    </td>
+                </tr>`
+            );
         });
 
-        document.getElementById('countDmsx').innerText    = dataDmsx.length;
-        document.getElementById('countSap').innerText     = dataSap.length;
-        document.getElementById('countMatch').innerText   = mCount;
+        document.getElementById('countDmsx').innerText     = dataDmsx.length;
+        document.getElementById('countSap').innerText      = dataSap.length;
+        document.getElementById('countMatch').innerText    = mCount;
         document.getElementById('countMismatch').innerText = misCount;
+
+        renderBreakdown('breakdownMatch', matchStatusCount);
+        renderBreakdown('breakdownMismatch', mismatchStatusCount);
+
         document.getElementById('resultView').style.display = 'block';
     }
 </script>
