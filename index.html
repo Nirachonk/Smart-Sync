@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ระบบแมทช์รึป่าว — DMSx vs SAP</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -21,9 +22,19 @@
         .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1rem; }
 
         .grid-upload { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .card-upload { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 2px dashed var(--border); text-align: center; }
+        .card-upload { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 2px dashed var(--border); text-align: center; transition: 0.2s; }
         .card-upload:hover { border-color: var(--primary-purple); }
-        .card-upload h3 { margin-bottom: 1rem; color: var(--primary-purple); }
+        .card-upload h3 { margin-bottom: 0.5rem; color: var(--primary-purple); }
+        .card-upload .file-types { font-size: 0.75rem; color: #94a3b8; margin-bottom: 1rem; }
+
+        /* PDF badge indicator */
+        .pdf-badge { display: inline-block; background: #fef3c7; color: #92400e; font-size: 0.7rem; font-weight: 700; padding: 2px 7px; border-radius: 10px; border: 1px solid #fde68a; margin-left: 5px; vertical-align: middle; }
+
+        /* File status indicator */
+        .file-status { margin-top: 0.5rem; font-size: 0.82rem; min-height: 1.2rem; }
+        .file-status.ok { color: #166534; }
+        .file-status.err { color: #991b1b; }
+        .file-status.loading { color: #1e40af; }
 
         .btn-row { display: flex; gap: 1rem; align-items: stretch; margin-bottom: 0; }
         .btn-main { flex: 1; background: var(--primary-purple); color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Sarabun', sans-serif; }
@@ -31,12 +42,10 @@
         .btn-reset { background: #f1f5f9; color: #64748b; border: 2px solid #e2e8f0; padding: 1rem 1.5rem; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Sarabun', sans-serif; white-space: nowrap; }
         .btn-reset:hover { background: #fee2e2; border-color: #ef4444; color: #991b1b; transform: translateY(-2px); }
 
-        /* Summary cards */
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0 1rem; }
         .stat-card { background: white; padding: 1.2rem; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .stat-value { font-size: 1.8rem; font-weight: 700; display: block; }
 
-        /* Breakdown panels */
         .breakdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
         .breakdown-panel { background: white; border-radius: 12px; padding: 1.2rem 1.4rem; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .breakdown-panel h4 { margin: 0 0 0.8rem; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; }
@@ -47,12 +56,10 @@
         .breakdown-count { font-weight: 700; font-size: 1rem; min-width: 2rem; text-align: right; }
         .empty-breakdown { color: #94a3b8; font-size: 0.85rem; text-align: center; padding: 0.5rem 0; }
 
-        /* Export button row */
         .action-row { display: flex; justify-content: flex-end; margin-bottom: 0.75rem; }
         .btn-export { background: #166534; color: white; border: none; padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: 0.2s; font-family: 'Sarabun', sans-serif; display: flex; align-items: center; gap: 0.4rem; }
         .btn-export:hover { background: #14532d; transform: translateY(-1px); }
 
-        /* Table */
         .table-container { background: white; border-radius: 12px; overflow: auto; max-height: 60vh; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; }
         table { width: 100%; border-collapse: collapse; min-width: 600px; }
         thead tr { position: sticky; top: 0; z-index: 10; }
@@ -86,11 +93,15 @@
     <div class="grid-upload" id="uploadSection">
         <div class="card-upload">
             <h3>📁 ไฟล์ SAP</h3>
+            <div class="file-types">.CSV / .XLS / .XLSX</div>
             <input type="file" id="fileSap" accept=".csv, .xls, .xlsx" multiple>
+            <div class="file-status" id="sapStatus"></div>
         </div>
         <div class="card-upload">
-            <h3>📁 ไฟล์ DMSx</h3>
-            <input type="file" id="fileDmsx" accept=".csv, .xls, .xlsx" multiple>
+            <h3>📁 ไฟล์ DMSx <span class="pdf-badge">รองรับ PDF</span></h3>
+            <div class="file-types">.CSV / .XLS / .XLSX / .PDF</div>
+            <input type="file" id="fileDmsx" accept=".csv, .xls, .xlsx, .pdf" multiple onchange="onDmsxFileChange(this)">
+            <div class="file-status" id="dmsxStatus"></div>
         </div>
     </div>
 
@@ -100,8 +111,6 @@
     </div>
 
     <div id="resultView" style="display: none;">
-
-        <!-- ตัวเลขสรุป -->
         <div class="summary-grid">
             <div class="stat-card">
                 <span class="stat-value" id="countDmsx">0</span>
@@ -121,7 +130,6 @@
             </div>
         </div>
 
-        <!-- Breakdown แยกสถานะ -->
         <div class="breakdown-grid">
             <div class="breakdown-panel">
                 <h4 class="h4-match">✅ ตรงกัน — แยกตามสถานะ SAP</h4>
@@ -133,7 +141,6 @@
             </div>
         </div>
 
-        <!-- ปุ่ม Export + ตาราง -->
         <div class="action-row">
             <button class="btn-export" onclick="exportToXLS()">⬇ Export เป็น XLS</button>
         </div>
@@ -156,6 +163,9 @@
 </div>
 
 <script>
+    // PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
     const SOURCE_CONFIG = {
         sap: {
             label: "SAP",
@@ -177,10 +187,132 @@
         }
     };
 
-    // เก็บข้อมูลดิบไว้ใช้ Export
     let exportRows = [];
 
-    /* ── Reset ── */
+    /* ─────────────────────────────────────────────
+       PDF PARSER — DMSX_AGENT_REP02 format
+    ───────────────────────────────────────────── */
+    async function parseDmsxPdf(file) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const records = [];
+
+        for (let p = 1; p <= pdf.numPages; p++) {
+            const page = await pdf.getPage(p);
+            const content = await page.getTextContent();
+            const vp = page.getViewport({ scale: 1 });
+
+            // Build word list with positions (flip y: PDF y=0 is bottom)
+            const items = content.items.map(it => ({
+                text: it.str,
+                x: Math.round(it.transform[4]),
+                y: Math.round(vp.height - it.transform[5])
+            })).filter(it => it.text.trim());
+
+            // Group by Y row (5px bucket)
+            const rowMap = {};
+            for (const it of items) {
+                const bucket = Math.round(it.y / 5) * 5;
+                if (!rowMap[bucket]) rowMap[bucket] = [];
+                rowMap[bucket].push(it);
+            }
+            const sortedRows = Object.keys(rowMap).map(Number).sort((a,b) => a-b);
+
+            for (let ri = 0; ri < sortedRows.length; ri++) {
+                const y = sortedRows[ri];
+                const row = rowMap[y].sort((a,b) => a.x - b.x);
+                const first = row[0];
+
+                // Record header row: starts with 1-2 digit seq number at x<50
+                if (first && /^\d{1,2}$/.test(first.text) && first.x < 50) {
+                    // CA (หมายเลขผู้ใช้ไฟ): x 60–120
+                    const ca = row.find(w => w.x >= 60 && w.x <= 120 && /^\d{9,12}$/.test(w.text));
+                    // Status (สถานะล่าสุด): x 430–500
+                    const statusWords = row.filter(w => w.x >= 430 && w.x <= 500);
+                    let statusRaw = statusWords.map(w => w.text).join(' ');
+
+                    // Sub-rows (next 3 rows within 35px) for PEA No and status fallback
+                    let pea = '';
+                    const subRows = sortedRows.filter(sy => sy > y && sy < y + 40);
+                    for (const sy of subRows) {
+                        const sub = (rowMap[sy] || []).sort((a,b) => a.x - b.x);
+                        // PEA No: x 120–180 on sub-row
+                        if (!pea) {
+                            const peaW = sub.find(w => w.x >= 120 && w.x <= 180 && /^[\w\d]{4,12}$/.test(w.text));
+                            if (peaW) pea = peaW.text;
+                        }
+                        // Status fallback
+                        if (!statusRaw.trim()) {
+                            const subStatus = sub.filter(w => w.x >= 430 && w.x <= 500);
+                            if (subStatus.length) statusRaw = subStatus.map(w => w.text).join(' ');
+                        }
+                    }
+
+                    if (ca) {
+                        records.push({
+                            CA: ca.text,
+                            'PEA No': pea,
+                            'สถานะ': normalizeDmsxStatus(statusRaw)
+                        });
+                    }
+                }
+            }
+        }
+        return records;
+    }
+
+    /* Normalize raw status text extracted from PDF */
+    function normalizeDmsxStatus(raw) {
+        // Fix Thai private-use unicode (custom font encoding in this PDF)
+        const enc = {'\uf70a':'อ','\uf70b':'า','\uf70c':'ิ','\uf70d':'ั','\uf70e':'ี',
+                     '\uf70f':'ึ','\uf710':'ื','\uf711':'ุ','\uf712':'ู','\uf718':'็',
+                     '\uf719':'่','\uf71a':'้','\uf71b':'๊','\uf71c':'๋'};
+        for (const [k,v] of Object.entries(enc)) raw = raw.split(k).join(v);
+        raw = raw.trim();
+
+        if (/ตอสายแล|ตออสายแล/.test(raw)) return 'ต่อสาย';
+        if (/ปลดสายแล/.test(raw)) return 'ปลดสาย';
+        if (/ใหตอสาย|ใหาตออสาย/.test(raw)) return 'ให้ต่อสาย';
+        if (/ผอนผ|^1$/.test(raw)) return 'ผ่อนผัน';
+        if (/ชำระเงินร|ปดงาน/.test(raw)) return 'ปิดงาน';
+        return raw;
+    }
+
+    /* ─────────────────────────────────────────────
+       FILE TYPE DETECTION
+    ───────────────────────────────────────────── */
+    async function onDmsxFileChange(input) {
+        const files = Array.from(input.files);
+        const statusEl = document.getElementById('dmsxStatus');
+        if (!files.length) { statusEl.textContent = ''; return; }
+
+        const hasPdf = files.some(f => f.name.toLowerCase().endsWith('.pdf'));
+        if (hasPdf) {
+            statusEl.className = 'file-status loading';
+            statusEl.textContent = '⏳ กำลังโหลดไฟล์ PDF...';
+            // Pre-parse PDFs
+            try {
+                const pdfFiles = files.filter(f => f.name.toLowerCase().endsWith('.pdf'));
+                let total = 0;
+                for (const f of pdfFiles) {
+                    const rows = await parseDmsxPdf(f);
+                    total += rows.length;
+                }
+                statusEl.className = 'file-status ok';
+                statusEl.textContent = `✅ โหลด PDF สำเร็จ — พบ ${total} รายการ`;
+            } catch(e) {
+                statusEl.className = 'file-status err';
+                statusEl.textContent = '❌ โหลด PDF ไม่สำเร็จ: ' + e.message;
+            }
+        } else {
+            statusEl.className = 'file-status ok';
+            statusEl.textContent = `✅ เลือกไฟล์แล้ว: ${files.map(f=>f.name).join(', ')}`;
+        }
+    }
+
+    /* ─────────────────────────────────────────────
+       RESET
+    ───────────────────────────────────────────── */
     function resetPage() {
         document.getElementById('fileSap').value = '';
         document.getElementById('fileDmsx').value = '';
@@ -191,174 +323,184 @@
         });
         document.getElementById('breakdownMatch').innerHTML = '<p class="empty-breakdown">—</p>';
         document.getElementById('breakdownMismatch').innerHTML = '<p class="empty-breakdown">—</p>';
+        document.getElementById('sapStatus').textContent = '';
+        document.getElementById('dmsxStatus').textContent = '';
         exportRows = [];
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    /* ── Status pill (แสดงผล) ── */
+    /* ─────────────────────────────────────────────
+       STATUS PILL
+    ───────────────────────────────────────────── */
     function statusPill(text) {
         if (!text) return '<span class="status-pill status-default">—</span>';
         const t = text.trim();
         let cls = 'status-default';
         if (t.includes('ปลดสาย')) cls = 'status-plad';
-        else if (t.includes('ต่อสาย')) cls = 'status-tor';
+        else if (t.includes('ต่อสาย') || t.includes('ตอสาย')) cls = 'status-tor';
         else if (t.includes('ผ่อนผัน') || t.includes('ผ่อน')) cls = 'status-phaawn';
         return `<span class="status-pill ${cls}">${t}</span>`;
     }
 
-    /* ── Breakdown panel ── */
+    /* ─────────────────────────────────────────────
+       BREAKDOWN PANEL
+    ───────────────────────────────────────────── */
     function renderBreakdown(containerId, countMap) {
         const el = document.getElementById(containerId);
-        const entries = Object.entries(countMap).sort((a, b) => b[1] - a[1]);
+        const entries = Object.entries(countMap).sort((a,b) => b[1]-a[1]);
         if (!entries.length) { el.innerHTML = '<p class="empty-breakdown">ไม่มีรายการ</p>'; return; }
-
-        const STATUS_COLOR = {
-            'ปลดสาย': '#991b1b',
-            'ต่อสาย':  '#166534',
-            'ผ่อนผัน': '#854d0e',
-        };
-
-        el.innerHTML = entries.map(([status, count]) => {
-            const color = STATUS_COLOR[status] || '#475569';
-            return `<div class="breakdown-row">
-                <span>${statusPill(status)}</span>
-                <span class="breakdown-count" style="color:${color}">${count} ราย</span>
-            </div>`;
-        }).join('');
+        const COLOR = { 'ปลดสาย':'#991b1b','ต่อสาย':'#166534','ผ่อนผัน':'#854d0e' };
+        el.innerHTML = entries.map(([s, c]) => `
+            <div class="breakdown-row">
+                <span>${statusPill(s)}</span>
+                <span class="breakdown-count" style="color:${COLOR[s]||'#475569'}">${c} ราย</span>
+            </div>`).join('');
     }
 
-    /* ── Export XLS ── */
+    /* ─────────────────────────────────────────────
+       EXPORT XLS
+    ───────────────────────────────────────────── */
     function exportToXLS() {
         if (!exportRows.length) { alert("ไม่มีข้อมูลให้ส่งออก"); return; }
-
         const wsData = [
-            ["หมายเลขผู้ใช้ไฟ", "Pea No", "สถานะ (SAP)", "สถานะ (DMSx)", "ผลลัพธ์"],
+            ["หมายเลขผู้ใช้ไฟ","Pea No","สถานะ (SAP)","สถานะ (DMSx)","ผลลัพธ์"],
             ...exportRows.map(r => [r.customerId, r.peaNo, r.sapStatus, r.dmsxStatus, r.result])
         ];
-
         const wb = XLSX.utils.book_new();
         const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-        // กำหนดความกว้างคอลัมน์
-        ws['!cols'] = [
-            { wch: 20 }, { wch: 18 }, { wch: 16 }, { wch: 16 }, { wch: 14 }
-        ];
-
+        ws['!cols'] = [{wch:20},{wch:18},{wch:16},{wch:16},{wch:14}];
         XLSX.utils.book_append_sheet(wb, ws, "ผลการตรวจสอบ");
-
         const now = new Date();
-        const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
-        XLSX.writeFile(wb, `ผลตรวจสอบ_${dateStr}.xlsx`);
+        const d = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+        XLSX.writeFile(wb, `ผลตรวจสอบ_${d}.xlsx`);
     }
 
-    /* ── File parsing ── */
+    /* ─────────────────────────────────────────────
+       SPREADSHEET PARSING (CSV / XLS / XLSX)
+    ───────────────────────────────────────────── */
     function parseHtmlTableToJson(htmlText) {
         const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, "text/html");
+        const doc = parser.parseFromString(htmlText,"text/html");
         const table = doc.querySelector("table");
         if (!table) return [];
         const rows = Array.from(table.querySelectorAll("tr"))
-            .map(tr => Array.from(tr.querySelectorAll("td, th")).map(cell =>
-                normalizeValue(cell.textContent.replace(/\s+/g, " "))
-            ))
-            .filter(row => row.some(cell => cell));
-        const headerIndex = rows.findIndex(row =>
-            row.some(cell => cell.toLowerCase() === "ca") &&
-            row.some(cell => cell.toLowerCase() === "pea no")
-        );
-        if (headerIndex === -1) return [];
-        const headers = rows[headerIndex];
-        return rows.slice(headerIndex + 1).map(row => {
-            const normalizedRow = [...row];
-            while (normalizedRow.length < headers.length) normalizedRow.push("");
-            return Object.fromEntries(headers.map((header, index) => [header, normalizedRow[index] ?? ""]));
+            .map(tr => Array.from(tr.querySelectorAll("td,th")).map(c => normalizeValue(c.textContent.replace(/\s+/g," "))))
+            .filter(r => r.some(c=>c));
+        const hi = rows.findIndex(r => r.some(c=>c.toLowerCase()==="ca") && r.some(c=>c.toLowerCase()==="pea no"));
+        if (hi===-1) return [];
+        const headers = rows[hi];
+        return rows.slice(hi+1).map(row => {
+            while(row.length<headers.length) row.push("");
+            return Object.fromEntries(headers.map((h,i)=>[h,row[i]??""]));
         });
     }
 
-    async function readFileData(file) {
-        return new Promise((resolve) => {
+    async function readSpreadsheetFile(file) {
+        return new Promise(resolve => {
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const fileContent = e.target.result;
-                const isTextContent = typeof fileContent === "string";
-                const isHtmlTable = isTextContent && /^\s*</.test(fileContent) && fileContent.toLowerCase().includes("<table");
-                const rows = isHtmlTable
-                    ? parseHtmlTableToJson(fileContent)
+            reader.onload = e => {
+                const fc = e.target.result;
+                const isText = typeof fc === "string";
+                const isHtml = isText && /^\s*</.test(fc) && fc.toLowerCase().includes("<table");
+                const rows = isHtml
+                    ? parseHtmlTableToJson(fc)
                     : (() => {
-                        const workbook = XLSX.read(new Uint8Array(fileContent), { type: 'array', raw: false, dense: false });
-                        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                        return XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+                        const wb = XLSX.read(new Uint8Array(fc),{type:'array',raw:false});
+                        return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:""});
                     })();
                 resolve(rows);
             };
-            file.name.split(".").pop().toLowerCase() === "xls"
+            file.name.split(".").pop().toLowerCase()==="xls"
                 ? reader.readAsText(file)
                 : reader.readAsArrayBuffer(file);
         });
     }
 
-    function normalizeValue(value) {
-        return String(value ?? "").replace(/^\uFEFF/, "").replace(/^'+/, "").replace(/\s+/g, " ").trim();
+    function normalizeValue(v) {
+        return String(v??"").replace(/^\uFEFF/,"").replace(/^'+/,"").replace(/\s+/g," ").trim();
     }
-
-    function normalizeIdentifier(value) {
-        return normalizeValue(value)
-            .replace(/\(\s*\d+\s*phase\s*\)/gi, "")
-            .replace(/\([^)]*\)/g, "")
-            .replace(/<[^>]*>/g, "")
-            .replace(/[^0-9A-Za-z]/g, "")
-            .trim();
+    function normalizeIdentifier(v) {
+        return normalizeValue(v).replace(/\(\s*\d+\s*phase\s*\)/gi,"").replace(/\([^)]*\)/g,"")
+            .replace(/<[^>]*>/g,"").replace(/[^0-9A-Za-z]/g,"").trim();
     }
-
     function findColumnValue(obj, aliases) {
-        const foundKey = Object.keys(obj).find(key => {
-            const normalizedKey = normalizeValue(key).toLowerCase();
-            return aliases.some(alias => normalizedKey.includes(normalizeValue(alias).toLowerCase()));
+        const k = Object.keys(obj).find(key => {
+            const nk = normalizeValue(key).toLowerCase();
+            return aliases.some(a => nk.includes(normalizeValue(a).toLowerCase()));
         });
-        return foundKey ? normalizeValue(obj[foundKey]) : "";
+        return k ? normalizeValue(obj[k]) : "";
     }
-
-    function simplifyStatus(status, sourceType) {
-        const normalizedStatus = normalizeValue(status).toLowerCase();
-        if (!normalizedStatus) return "";
-        if (sourceType === "sap") {
-            if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
-            if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
-            if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
-            return normalizeValue(status);
-        }
-        if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
-        if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
-        if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
-        if (normalizedStatus.includes("ระงับ")) return "ระงับ";
+    function simplifyStatus(status, src) {
+        const s = normalizeValue(status).toLowerCase();
+        if (!s) return "";
+        if (s.includes("ปลดสาย")) return "ปลดสาย";
+        if (s.includes("ต่อสาย") || s.includes("ตอสาย")) return "ต่อสาย";
+        if (s.includes("ผ่อน") || s.includes("ผอน")) return "ผ่อนผัน";
+        if (src!=="sap" && s.includes("ระงับ")) return "ระงับ";
         return normalizeValue(status);
     }
-
     function getMissingColumns(rows, sourceType, fileName) {
         if (!rows.length) return [`${fileName}: ไม่พบข้อมูลในไฟล์`];
-        const headers = Object.keys(rows[0]).map(header => normalizeValue(header).toLowerCase());
+        const headers = Object.keys(rows[0]).map(h => normalizeValue(h).toLowerCase());
         return Object.entries(SOURCE_CONFIG[sourceType].fields)
-            .filter(([, aliases]) => !aliases.some(alias => headers.some(header => header.includes(normalizeValue(alias).toLowerCase()))))
-            .map(([fieldName, aliases]) => `${fileName} -> ${fieldName}: ${aliases.join(" / ")}`);
+            .filter(([,aliases]) => !aliases.some(a => headers.some(h => h.includes(normalizeValue(a).toLowerCase()))))
+            .map(([fn,aliases]) => `${fileName} -> ${fn}: ${aliases.join(" / ")}`);
+    }
+    function buildMatchKey(ca, pea) {
+        return `${normalizeIdentifier(ca)}|${normalizeIdentifier(pea)}`;
     }
 
-    function buildMatchKey(customerNo, peaNo) {
-        return `${normalizeIdentifier(customerNo)}|${normalizeIdentifier(peaNo)}`;
-    }
-
-    async function loadFiles(fileList, sourceType) {
+    /* Load spreadsheet files for any source */
+    async function loadSpreadsheetFiles(fileList, sourceType) {
         const files = Array.from(fileList);
-        const allRows = [], missingColumns = [];
-        for (const file of files) {
-            const rows = await readFileData(file);
-            const fileMissingColumns = getMissingColumns(rows, sourceType, file.name);
-            if (fileMissingColumns.length) { missingColumns.push(...fileMissingColumns); continue; }
-            rows.forEach(row => allRows.push({ ...row, __fileName: file.name }));
+        const allRows = [], missing = [];
+        for (const f of files) {
+            const rows = await readSpreadsheetFile(f);
+            const m = getMissingColumns(rows, sourceType, f.name);
+            if (m.length) { missing.push(...m); continue; }
+            rows.forEach(r => allRows.push({...r, __fileName:f.name}));
         }
-        return { rows: allRows, missingColumns };
+        return {rows:allRows, missingColumns:missing};
     }
 
-    /* ── Main process ── */
+    /* Load DMSX files — supports PDF + spreadsheets */
+    async function loadDmsxFiles(fileList) {
+        const files = Array.from(fileList);
+        const allRows = [], missing = [];
+        for (const f of files) {
+            const ext = f.name.split(".").pop().toLowerCase();
+            if (ext === "pdf") {
+                // Parse PDF and convert to row objects compatible with SOURCE_CONFIG
+                try {
+                    const pdfRows = await parseDmsxPdf(f);
+                    if (!pdfRows.length) {
+                        missing.push(`${f.name}: ไม่พบข้อมูลในไฟล์ PDF`);
+                    } else {
+                        pdfRows.forEach(r => allRows.push({
+                            'CA': r['CA'],
+                            'PEA No': r['PEA No'],
+                            'สถานะล่าสุด': r['สถานะ'],
+                            '__fileName': f.name,
+                            '__fromPdf': true
+                        }));
+                    }
+                } catch(e) {
+                    missing.push(`${f.name}: อ่าน PDF ไม่ได้ — ${e.message}`);
+                }
+            } else {
+                // Normal spreadsheet
+                const rows = await readSpreadsheetFile(f);
+                const m = getMissingColumns(rows, "dmsx", f.name);
+                if (m.length) { missing.push(...m); continue; }
+                rows.forEach(r => allRows.push({...r, __fileName:f.name}));
+            }
+        }
+        return {rows:allRows, missingColumns:missing};
+    }
+
+    /* ─────────────────────────────────────────────
+       MAIN PROCESS
+    ───────────────────────────────────────────── */
     async function processData() {
         const sapFiles  = document.getElementById('fileSap').files;
         const dmsxFiles = document.getElementById('fileDmsx').files;
@@ -368,64 +510,57 @@
             return;
         }
 
-        const sapResult  = await loadFiles(sapFiles,  "sap");
-        const dmsxResult = await loadFiles(dmsxFiles, "dmsx");
-        const dataSap    = sapResult.rows;
-        const dataDmsx   = dmsxResult.rows;
+        document.getElementById('dmsxStatus').className = 'file-status loading';
+        document.getElementById('dmsxStatus').textContent = '⏳ กำลังประมวลผล...';
+
+        const sapResult  = await loadSpreadsheetFiles(sapFiles, "sap");
+        const dmsxResult = await loadDmsxFiles(dmsxFiles);
+        const dataSap  = sapResult.rows;
+        const dataDmsx = dmsxResult.rows;
 
         if (sapResult.missingColumns.length || dmsxResult.missingColumns.length) {
-            alert("โครงสร้างไฟล์ไม่ถูกต้อง กรุณาตรวจสอบคอลัมน์ของไฟล์จริงชุดใหม่ใน Console");
+            const msg = [...sapResult.missingColumns, ...dmsxResult.missingColumns].join('\n');
+            alert("โครงสร้างไฟล์ไม่ถูกต้อง:\n" + msg);
+            document.getElementById('dmsxStatus').textContent = '';
             return;
         }
 
-        let mCount = 0, misCount = 0;
-        const matchStatusCount = {};    // นับแยกสถานะ สำหรับ "ตรงกัน"
-        const mismatchStatusCount = {}; // นับแยกสถานะ สำหรับ "ไม่ตรงกัน"
+        document.getElementById('dmsxStatus').className = 'file-status ok';
+        document.getElementById('dmsxStatus').textContent = `✅ พบ ${dataDmsx.length} รายการ`;
 
+        let mCount=0, misCount=0;
+        const matchSC={}, mismatchSC={};
         const tbody = document.querySelector("#resultTable tbody");
         tbody.innerHTML = "";
         exportRows = [];
 
+        // Build DMSX index
         const dmsxIndex = new Map();
-        dataDmsx.forEach(dmsxItem => {
-            const key = buildMatchKey(
-                findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.customerNo),
-                findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.peaNo)
-            );
-            if (!key || key === "|") return;
-            if (!dmsxIndex.has(key)) dmsxIndex.set(key, dmsxItem);
+        dataDmsx.forEach(item => {
+            const ca  = findColumnValue(item, SOURCE_CONFIG.dmsx.fields.customerNo);
+            const pea = findColumnValue(item, SOURCE_CONFIG.dmsx.fields.peaNo);
+            const key = buildMatchKey(ca, pea);
+            if (!key || key==="|") return;
+            if (!dmsxIndex.has(key)) dmsxIndex.set(key, item);
         });
 
         dataSap.forEach(sapItem => {
-            const sapId        = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.customerNo);
-            const sapPea       = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.peaNo);
+            const sapId  = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.customerNo);
+            const sapPea = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.peaNo);
             const sapStatusRaw = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.status);
-            const sapStatus    = simplifyStatus(sapStatusRaw, "sap");
-            const matchKey     = buildMatchKey(sapId, sapPea);
-            const dmsxItem     = dmsxIndex.get(matchKey);
-
+            const sapStatus = simplifyStatus(sapStatusRaw, "sap");
+            const key = buildMatchKey(sapId, sapPea);
+            const dmsxItem = dmsxIndex.get(key);
             if (!dmsxItem) return;
 
             const dmsxStatusRaw = findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.status);
-            const dmsxStatus    = simplifyStatus(dmsxStatusRaw, "dmsx");
-            const isMatch       = (sapStatus === dmsxStatus);
+            const dmsxStatus = simplifyStatus(dmsxStatusRaw, "dmsx");
+            const isMatch = (sapStatus === dmsxStatus);
 
-            if (isMatch) {
-                mCount++;
-                matchStatusCount[sapStatus] = (matchStatusCount[sapStatus] || 0) + 1;
-            } else {
-                misCount++;
-                mismatchStatusCount[sapStatus] = (mismatchStatusCount[sapStatus] || 0) + 1;
-            }
+            if (isMatch) { mCount++; matchSC[sapStatus]=(matchSC[sapStatus]||0)+1; }
+            else         { misCount++; mismatchSC[sapStatus]=(mismatchSC[sapStatus]||0)+1; }
 
-            // เก็บสำหรับ Export
-            exportRows.push({
-                customerId: sapId,
-                peaNo: sapPea,
-                sapStatus,
-                dmsxStatus,
-                result: isMatch ? 'ตรงกัน' : 'ไม่ตรงกัน'
-            });
+            exportRows.push({customerId:sapId, peaNo:sapPea, sapStatus, dmsxStatus, result:isMatch?'ตรงกัน':'ไม่ตรงกัน'});
 
             tbody.insertAdjacentHTML('beforeend', `
                 <tr>
@@ -433,23 +568,16 @@
                     <td style="font-family:monospace"><b>${sapPea}</b></td>
                     <td>${statusPill(sapStatus)}</td>
                     <td>${statusPill(dmsxStatus)}</td>
-                    <td>
-                        <span class="badge ${isMatch ? 'badge-success' : 'badge-error'}">
-                            ${isMatch ? '✓ ตรงกัน' : '✗ ไม่ตรงกัน'}
-                        </span>
-                    </td>
-                </tr>`
-            );
+                    <td><span class="badge ${isMatch?'badge-success':'badge-error'}">${isMatch?'✓ ตรงกัน':'✗ ไม่ตรงกัน'}</span></td>
+                </tr>`);
         });
 
-        document.getElementById('countDmsx').innerText     = dataDmsx.length;
-        document.getElementById('countSap').innerText      = dataSap.length;
-        document.getElementById('countMatch').innerText    = mCount;
+        document.getElementById('countDmsx').innerText    = dataDmsx.length;
+        document.getElementById('countSap').innerText     = dataSap.length;
+        document.getElementById('countMatch').innerText   = mCount;
         document.getElementById('countMismatch').innerText = misCount;
-
-        renderBreakdown('breakdownMatch', matchStatusCount);
-        renderBreakdown('breakdownMismatch', mismatchStatusCount);
-
+        renderBreakdown('breakdownMatch', matchSC);
+        renderBreakdown('breakdownMismatch', mismatchSC);
         document.getElementById('resultView').style.display = 'block';
     }
 </script>
