@@ -18,27 +18,62 @@
 
         body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); margin: 0; }
         .hero-header { background: var(--primary-purple); color: white; padding: 2.5rem 1rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1rem; }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
         
         .grid-upload { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
         .card-upload { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 2px dashed var(--border); text-align: center; }
         .card-upload:hover { border-color: var(--primary-purple); }
         .card-upload h3 { margin-bottom: 1rem; color: var(--primary-purple); }
 
-        .btn-main { width: 100%; background: var(--primary-purple); color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .button-group { display: flex; gap: 10px; margin-bottom: 2rem; }
+        .btn-main { flex: 3; background: var(--primary-purple); color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-reset { flex: 1; background: #64748b; color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
         .btn-main:hover { background: #5b21b6; transform: translateY(-2px); }
+        .btn-reset:hover { background: #475569; }
 
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0; }
         .stat-card { background: white; padding: 1.2rem; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
         .stat-value { font-size: 1.8rem; font-weight: 700; display: block; }
         
-        .table-container { background: white; border-radius: 12px; overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th { background: #f8fafc; padding: 1rem; text-align: left; color: #64748b; }
+        /* 1. ตรึงหัวข้อตาราง */
+        .table-container { 
+            background: white; 
+            border-radius: 12px; 
+            overflow-y: auto; 
+            max-height: 650px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+            border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 800px; }
+        
+        thead th { 
+            position: sticky; 
+            top: 0; 
+            background: #f8fafc; 
+            z-index: 10; 
+            padding: 1.2rem 1rem; 
+            text-align: left; 
+            color: #64748b; 
+            border-bottom: 2px solid var(--border);
+        }
+
         td { padding: 1rem; border-bottom: 1px solid #f1f5f9; }
+        
+        /* 2. ไฮไลท์สถานะ */
+        .status-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        .status-ปลดสาย { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .status-ต่อสาย { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .status-ผ่อนผัน { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+        .status-unknown { background-color: #f1f5f9; color: #475569; }
+
         .badge { padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
-        .badge-success { background: #dcfce7; color: #166534; }
-        .badge-error { background: #fee2e2; color: #991b1b; }
+        .badge-success { background: #22c55e; color: white; }
+        .badge-error { background: #ef4444; color: white; }
     </style>
 </head>
 <body>
@@ -60,7 +95,10 @@
         </div>
     </div>
 
-    <button class="btn-main" onclick="processData()">🚀 ตรวจสอบข้อมูล</button>
+    <div class="button-group">
+        <button class="btn-main" onclick="processData()">🚀 ตรวจสอบข้อมูล</button>
+        <button class="btn-reset" onclick="resetPage()">🔄 Reset</button>
+    </div>
 
     <div id="resultView" style="display: none;">
         <div class="summary-grid">
@@ -78,7 +116,7 @@
             </div>
             <div class="stat-card" style="color: var(--danger)">
                 <span class="stat-value" id="countMismatch">0</span>
-                <small>ไม่ตรงกัน</small>
+                <small>ข้อมูลไม่ตรงกัน</small>
             </div>
         </div>
 
@@ -102,123 +140,43 @@
 <script>
     const SOURCE_CONFIG = {
         sap: {
-            label: "SAP",
             fields: {
                 customerNo: ["บัญชีแสดงสัญญา"],
                 peaNo: ["เลขที่มิเตอร์ที่ดำเนินการ"],
-                status: ["การดำเนินการ"],
-                jobNo: ["ใบแจ้งดำเนินการ"]
+                status: ["การดำเนินการ"]
             }
         },
         dmsx: {
-            label: "DMSx",
             fields: {
                 customerNo: ["CA", "หมายเลขผู้ใช้ไฟ"],
                 peaNo: ["PEA No", "Pea No"],
-                status: ["สถานะล่าสุด", "สถานะ"],
-                jobNo: ["ใบแจ้งดำเนินการ"]
+                status: ["สถานะล่าสุด", "สถานะ"]
             }
         }
     };
 
-    function parseHtmlTableToJson(htmlText) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, "text/html");
-        const table = doc.querySelector("table");
-
-        if (!table) {
-            return [];
-        }
-
-        const rows = Array.from(table.querySelectorAll("tr"))
-            .map(tr => Array.from(tr.querySelectorAll("td, th")).map(cell =>
-                normalizeValue(cell.textContent.replace(/\s+/g, " "))
-            ))
-            .filter(row => row.some(cell => cell));
-
-        const headerIndex = rows.findIndex(row =>
-            row.some(cell => cell.toLowerCase() === "ca") &&
-            row.some(cell => cell.toLowerCase() === "pea no")
-        );
-
-        if (headerIndex === -1) {
-            console.log("[UPLOAD] ไม่พบ header ของ HTML table", {
-                previewRows: rows.slice(0, 5)
-            });
-            return [];
-        }
-
-        const headers = rows[headerIndex];
-
-        return rows.slice(headerIndex + 1).map(row => {
-            const normalizedRow = [...row];
-            while (normalizedRow.length < headers.length) {
-                normalizedRow.push("");
-            }
-
-            return Object.fromEntries(
-                headers.map((header, index) => [header, normalizedRow[index] ?? ""])
-            );
-        });
+    function getStatusStyle(status) {
+        if (status.includes("ปลดสาย")) return "status-ปลดสาย";
+        if (status.includes("ต่อสาย")) return "status-ต่อสาย";
+        if (status.includes("ผ่อน")) return "status-ผ่อนผัน";
+        return "status-unknown";
     }
 
-    // ฟังก์ชันอ่านไฟล์ทั้ง CSV, Excel และ HTML table ที่ถูกเซฟเป็น .xls
-    async function readFileData(file) {
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const fileContent = e.target.result;
-                const isTextContent = typeof fileContent === "string";
-                const isHtmlTable = isTextContent &&
-                    /^\s*</.test(fileContent) &&
-                    fileContent.toLowerCase().includes("<table");
-
-                const rows = isHtmlTable
-                    ? parseHtmlTableToJson(fileContent)
-                    : (() => {
-                        const workbook = XLSX.read(new Uint8Array(fileContent), {
-                            type: 'array',
-                            raw: false,
-                            dense: false
-                        });
-                        const firstSheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheetName];
-                        return XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-                    })();
-
-                console.log("[UPLOAD] อ่านไฟล์สำเร็จ", {
-                    fileName: file.name,
-                    fileType: isHtmlTable ? "html-table" : "spreadsheet",
-                    totalRows: rows.length,
-                    preview: rows.slice(0, 5)
-                });
-
-                resolve(rows);
-            };
-            const extension = file.name.split(".").pop().toLowerCase();
-            if (extension === "xls") {
-                reader.readAsText(file);
-            } else {
-                reader.readAsArrayBuffer(file);
-            }
-        });
+    // 3. ฟังก์ชัน Reset หน้าจอ
+    function resetPage() {
+        document.getElementById('fileSap').value = "";
+        document.getElementById('fileDmsx').value = "";
+        document.getElementById('resultView').style.display = 'none';
+        document.querySelector("#resultTable tbody").innerHTML = "";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function normalizeValue(value) {
-        return String(value ?? "")
-            .replace(/^\uFEFF/, "")
-            .replace(/^'+/, "")
-            .replace(/\s+/g, " ")
-            .trim();
+        return String(value ?? "").replace(/^\uFEFF/, "").replace(/^'+/, "").replace(/\s+/g, " ").trim();
     }
 
     function normalizeIdentifier(value) {
-        return normalizeValue(value)
-            .replace(/\(\s*\d+\s*phase\s*\)/gi, "")
-            .replace(/\([^)]*\)/g, "")
-            .replace(/<[^>]*>/g, "")
-            .replace(/[^0-9A-Za-z]/g, "")
-            .trim();
+        return normalizeValue(value).replace(/[^0-9A-Za-z]/g, "").trim();
     }
 
     function findColumnValue(obj, aliases) {
@@ -226,76 +184,28 @@
             const normalizedKey = normalizeValue(key).toLowerCase();
             return aliases.some(alias => normalizedKey.includes(normalizeValue(alias).toLowerCase()));
         });
-
         return foundKey ? normalizeValue(obj[foundKey]) : "";
     }
 
-    function simplifyStatus(status, sourceType) {
-        const normalizedStatus = normalizeValue(status).toLowerCase();
-
-        if (!normalizedStatus) {
-            return "";
-        }
-
-        if (sourceType === "sap") {
-            if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
-            if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
-            if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
-            return normalizeValue(status);
-        }
-
-        if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
-        if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
-        if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
-        if (normalizedStatus.includes("ระงับ")) return "ระงับ";
-        return normalizeValue(status);
+    function simplifyStatus(status) {
+        const s = normalizeValue(status);
+        if (s.includes("ปลดสาย")) return "ปลดสาย";
+        if (s.includes("ต่อสาย")) return "ต่อสาย";
+        if (s.includes("ผ่อน")) return "ผ่อนผัน";
+        return s;
     }
 
-    function getMissingColumns(rows, sourceType, fileName) {
-        if (!rows.length) {
-            return [`${fileName}: ไม่พบข้อมูลในไฟล์`];
-        }
-
-        const headers = Object.keys(rows[0]).map(header => normalizeValue(header).toLowerCase());
-        return Object.entries(SOURCE_CONFIG[sourceType].fields)
-            .filter(([, aliases]) =>
-                !aliases.some(alias =>
-                    headers.some(header => header.includes(normalizeValue(alias).toLowerCase()))
-                )
-            )
-            .map(([fieldName, aliases]) => `${fileName} -> ${fieldName}: ${aliases.join(" / ")}`);
-    }
-
-    function buildMatchKey(customerNo, peaNo) {
-        return `${normalizeIdentifier(customerNo)}|${normalizeIdentifier(peaNo)}`;
-    }
-
-    async function loadFiles(fileList, sourceType) {
-        const files = Array.from(fileList);
-        const allRows = [];
-        const missingColumns = [];
-
-        for (const file of files) {
-            const rows = await readFileData(file);
-            const fileMissingColumns = getMissingColumns(rows, sourceType, file.name);
-
-            if (fileMissingColumns.length) {
-                missingColumns.push(...fileMissingColumns);
-                continue;
-            }
-
-            rows.forEach(row => {
-                allRows.push({
-                    ...row,
-                    __fileName: file.name
-                });
-            });
-        }
-
-        return {
-            rows: allRows,
-            missingColumns
-        };
+    async function readFileData(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                resolve(XLSX.utils.sheet_to_json(worksheet, { defval: "" }));
+            };
+            reader.readAsArrayBuffer(file);
+        });
     }
 
     async function processData() {
@@ -303,106 +213,48 @@
         const dmsxFiles = document.getElementById('fileDmsx').files;
 
         if (!sapFiles.length || !dmsxFiles.length) {
-            alert("กรุณาอัปโหลดไฟล์ SAP และ DMSx อย่างน้อยฝั่งละ 1 ไฟล์");
+            alert("กรุณาอัปโหลดไฟล์ให้ครบถ้วนค่ะ");
             return;
         }
 
-        const sapResult = await loadFiles(sapFiles, "sap");
-        const dmsxResult = await loadFiles(dmsxFiles, "dmsx");
-        const dataSap = sapResult.rows;
-        const dataDmsx = dmsxResult.rows;
-        const sapMissingColumns = sapResult.missingColumns;
-        const dmsxMissingColumns = dmsxResult.missingColumns;
+        let dataSap = [];
+        for (let f of sapFiles) dataSap = dataSap.concat(await readFileData(f));
+        let dataDmsx = [];
+        for (let f of dmsxFiles) dataDmsx = dataDmsx.concat(await readFileData(f));
 
-        if (sapMissingColumns.length || dmsxMissingColumns.length) {
-            console.log("[VALIDATION] ตรวจพบคอลัมน์ที่ไม่พร้อมใช้งาน", {
-                sapMissingColumns,
-                dmsxMissingColumns
-            });
-            alert("โครงสร้างไฟล์ไม่ถูกต้อง กรุณาตรวจสอบคอลัมน์ของไฟล์จริงชุดใหม่ใน Console");
-            return;
-        }
-
-        console.log("[PROCESS] เริ่มประมวลผลข้อมูล", {
-            sapFiles: Array.from(sapFiles, file => file.name),
-            dmsxFiles: Array.from(dmsxFiles, file => file.name),
-            sapRows: dataSap.length,
-            dmsxRows: dataDmsx.length
+        const dmsxMap = new Map();
+        dataDmsx.forEach(item => {
+            const id = normalizeIdentifier(findColumnValue(item, SOURCE_CONFIG.dmsx.fields.customerNo));
+            const pea = normalizeIdentifier(findColumnValue(item, SOURCE_CONFIG.dmsx.fields.peaNo));
+            if (id && pea) dmsxMap.set(`${id}|${pea}`, item);
         });
 
         let mCount = 0, misCount = 0;
         const tbody = document.querySelector("#resultTable tbody");
         tbody.innerHTML = "";
-        const dmsxIndex = new Map();
 
-        dataDmsx.forEach((dmsxItem, index) => {
-            const key = buildMatchKey(
-                findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.customerNo),
-                findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.peaNo)
-            );
-
-            if (!key || key === "|") {
-                console.log("[INDEX] ข้ามข้อมูล DMSx ที่ key ไม่สมบูรณ์", {
-                    rowNumber: index + 2,
-                    fileName: dmsxItem.__fileName,
-                    rowData: dmsxItem
-                });
-                return;
-            }
-
-            if (!dmsxIndex.has(key)) {
-                dmsxIndex.set(key, dmsxItem);
-            } else {
-                console.log("[INDEX] พบข้อมูล DMSx ซ้ำ key เดิม", {
-                    rowNumber: index + 2,
-                    fileName: dmsxItem.__fileName,
-                    key,
-                    rowData: dmsxItem
-                });
-            }
-        });
-
-        console.log("[INDEX] สร้างดัชนี DMSx สำเร็จ", {
-            indexedRows: dmsxIndex.size,
-            sourceRows: dataDmsx.length
-        });
-
-        // วนลูปเช็คโดยอิงจาก SAP เป็นหลัก หรือจะเลือกเช็คฝั่งที่มีข้อมูลก็ได้
-        dataSap.forEach((sapItem, index) => {
+        dataSap.forEach(sapItem => {
             const sapId = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.customerNo);
             const sapPea = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.peaNo);
-            const sapStatusRaw = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.status);
-            const sapStatus = simplifyStatus(sapStatusRaw, "sap");
-            const matchKey = buildMatchKey(sapId, sapPea);
-
-            const dmsxItem = dmsxIndex.get(matchKey);
+            const sapStatRaw = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.status);
+            
+            const key = `${normalizeIdentifier(sapId)}|${normalizeIdentifier(sapPea)}`;
+            const dmsxItem = dmsxMap.get(key);
 
             if (dmsxItem) {
-                const dmsxStatusRaw = findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.status);
-                const dmsxStatus = simplifyStatus(dmsxStatusRaw, "dmsx");
-                const isMatch = (sapStatus === dmsxStatus);
+                const dmsxStatRaw = findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.status);
+                const s1 = simplifyStatus(sapStatRaw);
+                const s2 = simplifyStatus(dmsxStatRaw);
+                const isMatch = (s1 === s2);
 
                 isMatch ? mCount++ : misCount++;
-
-                console.log("[MATCH]", {
-                    rowNumber: index + 2,
-                    fileName: sapItem.__fileName,
-                    key: matchKey,
-                    sapId,
-                    sapPea,
-                    sapStatusRaw,
-                    sapStatus,
-                    dmsxStatusRaw,
-                    dmsxStatus,
-                    result: isMatch ? "MATCH" : "MISMATCH"
-                });
 
                 const row = `
                     <tr>
                         <td>${sapId}</td>
                         <td style="font-family:monospace"><b>${sapPea}</b></td>
-                        <td>${sapStatus}</td>
-                        <td>${dmsxStatus}</td>
+                        <td><span class="status-badge ${getStatusStyle(s1)}">${s1 || '-'}</span></td>
+                        <td><span class="status-badge ${getStatusStyle(s2)}">${s2 || '-'}</span></td>
                         <td>
                             <span class="badge ${isMatch ? 'badge-success' : 'badge-error'}">
                                 ${isMatch ? '✓ ตรงกัน' : '✗ ไม่ตรงกัน'}
@@ -410,32 +262,15 @@
                         </td>
                     </tr>`;
                 tbody.insertAdjacentHTML('beforeend', row);
-            } else {
-                console.log("[MATCH] ไม่พบข้อมูลคู่ใน DMSx", {
-                    rowNumber: index + 2,
-                    fileName: sapItem.__fileName,
-                    key: matchKey,
-                    sapId,
-                    sapPea,
-                    sapStatusRaw
-                });
             }
         });
 
-        console.log("[SUMMARY] สรุปผลการจับคู่", {
-            sapRows: dataSap.length,
-            dmsxRows: dataDmsx.length,
-            matchCount: mCount,
-            mismatchCount: misCount
-        });
-
-        document.getElementById('countDmsx').innerText = dataDmsx.length;
         document.getElementById('countSap').innerText = dataSap.length;
+        document.getElementById('countDmsx').innerText = dataDmsx.length;
         document.getElementById('countMatch').innerText = mCount;
         document.getElementById('countMismatch').innerText = misCount;
         document.getElementById('resultView').style.display = 'block';
     }
-
 </script>
 
 </body>
