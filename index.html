@@ -3,437 +3,394 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ระบบแมทช์รึป่าว — DMSx vs SAP</title>
+    <title>ระบบแมทช์รึป่าว — SAP vs DM</title>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-purple: #4c1d95; 
+            --primary: #4c1d95;
             --bg: #f1f5f9;
-            --card-bg: #ffffff;
+            --card: #ffffff;
             --success: #22c55e;
             --danger: #ef4444;
             --border: #e2e8f0;
         }
+        * { box-sizing: border-box; }
+        body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; }
 
-        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); margin: 0; }
-        .hero-header { background: var(--primary-purple); color: white; padding: 2.5rem 1rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .container { max-width: 1000px; margin: 0 auto; padding: 2rem 1rem; }
-        
-        .grid-upload { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-        .card-upload { background: var(--card-bg); padding: 1.5rem; border-radius: 12px; border: 2px dashed var(--border); text-align: center; }
-        .card-upload:hover { border-color: var(--primary-purple); }
-        .card-upload h3 { margin-bottom: 1rem; color: var(--primary-purple); }
+        .hero { background: var(--primary); color: white; padding: 2.5rem 1rem; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.15); }
+        .hero h1 { margin: 0 0 0.5rem; font-size: 1.8rem; }
+        .hero p { margin: 0; opacity: 0.85; }
 
-        .btn-main { width: 100%; background: var(--primary-purple); color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-main:hover { background: #5b21b6; transform: translateY(-2px); }
+        .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
 
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0; }
-        .stat-card { background: white; padding: 1.2rem; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .stat-value { font-size: 1.8rem; font-weight: 700; display: block; }
-        
-        .table-container { background: white; border-radius: 12px; overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        th { background: #f8fafc; padding: 1rem; text-align: left; color: #64748b; }
-        td { padding: 1rem; border-bottom: 1px solid #f1f5f9; }
-        .badge { padding: 0.3rem 0.7rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
-        .badge-success { background: #dcfce7; color: #166534; }
-        .badge-error { background: #fee2e2; color: #991b1b; }
+        .upload-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
+        .upload-card { background: var(--card); padding: 1.5rem; border-radius: 12px; border: 2px dashed var(--border); text-align: center; transition: border-color 0.2s; }
+        .upload-card:hover { border-color: var(--primary); }
+        .upload-card h3 { margin: 0 0 0.8rem; color: var(--primary); font-size: 1.1rem; }
+        .upload-card .hint { font-size: 0.8rem; color: #94a3b8; margin-top: 0.5rem; }
+        input[type=file] { font-family: 'Sarabun', sans-serif; font-size: 0.95rem; }
+
+        .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 1rem; border-radius: 8px; font-size: 1.15rem; font-weight: 700; cursor: pointer; font-family: 'Sarabun', sans-serif; transition: 0.2s; }
+        .btn:hover { background: #5b21b6; transform: translateY(-2px); }
+        .btn:disabled { background: #94a3b8; transform: none; cursor: not-allowed; }
+
+        .alert { padding: 1rem 1.2rem; border-radius: 8px; margin: 1rem 0; font-size: 0.95rem; }
+        .alert-error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .alert-info { background: #dbeafe; color: #1e40af; border: 1px solid #93c5fd; }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin: 2rem 0 1.5rem; }
+        .stat { background: var(--card); padding: 1.2rem; border-radius: 12px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
+        .stat-val { font-size: 2rem; font-weight: 700; display: block; }
+        .stat-label { font-size: 0.85rem; color: #64748b; }
+        .stat.green .stat-val { color: #16a34a; }
+        .stat.red .stat-val { color: #dc2626; }
+        .stat.purple .stat-val { color: var(--primary); }
+
+        .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        .tab { padding: 0.6rem 1.2rem; border-radius: 8px; border: 2px solid var(--border); background: white; cursor: pointer; font-family: 'Sarabun', sans-serif; font-size: 0.95rem; font-weight: 600; transition: 0.2s; }
+        .tab.active-match { background: #dcfce7; border-color: #22c55e; color: #166534; }
+        .tab.active-mismatch { background: #fee2e2; border-color: #ef4444; color: #991b1b; }
+        .tab.active-notfound { background: #fef9c3; border-color: #eab308; color: #854d0e; }
+
+        .table-wrap { background: var(--card); border-radius: 12px; overflow-x: auto; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        thead th { background: #f8fafc; padding: 0.85rem 1rem; text-align: left; color: #475569; font-size: 0.88rem; white-space: nowrap; }
+        tbody td { padding: 0.85rem 1rem; border-bottom: 1px solid #f1f5f9; font-size: 0.92rem; }
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: #f8fafc; }
+        code { font-family: 'Courier New', monospace; font-size: 0.88rem; background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 3px; }
+
+        .badge { display: inline-block; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.8rem; font-weight: 700; }
+        .badge-ok { background: #dcfce7; color: #166534; }
+        .badge-fail { background: #fee2e2; color: #991b1b; }
+        .badge-warn { background: #fef9c3; color: #854d0e; }
+
+        .empty-state { text-align: center; padding: 3rem; color: #94a3b8; }
+
+        .export-btn { float: right; background: #0f172a; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-family: 'Sarabun', sans-serif; font-size: 0.9rem; cursor: pointer; margin-bottom: 0.5rem; }
+        .export-btn:hover { background: #1e293b; }
     </style>
 </head>
 <body>
 
-<div class="hero-header">
+<div class="hero">
     <h1>ระบบ "แมทช์รึป่าว"</h1>
-    <p>ลองปั๊บ รู้เลย! ตรวจสอบสถานะมิเตอร์ DMSx vs SAP</p>
+    <p>ตรวจสอบสถานะมิเตอร์ SAP vs DM — ลองปั๊บ รู้เลย!</p>
 </div>
 
 <div class="container">
-    <div class="grid-upload">
-        <div class="card-upload">
-            <h3>📁 ไฟล์ SAP</h3>
-            <input type="file" id="fileSap" accept=".csv, .xls, .xlsx" multiple>
+
+    <div class="upload-grid">
+        <div class="upload-card">
+            <h3>📋 ไฟล์ SAP</h3>
+            <input type="file" id="fileSap" accept=".xls,.xlsx,.csv">
+            <p class="hint">คอลัมน์ J = เลขที่มิเตอร์ &nbsp;|&nbsp; คอลัมน์ E = การดำเนินการ</p>
         </div>
-        <div class="card-upload">
-            <h3>📁 ไฟล์ DMSx</h3>
-            <input type="file" id="fileDmsx" accept=".csv, .xls, .xlsx" multiple>
+        <div class="upload-card">
+            <h3>📋 ไฟล์ DM</h3>
+            <input type="file" id="fileDm" accept=".xls,.xlsx,.csv">
+            <p class="hint">คอลัมน์ I = PEA No &nbsp;|&nbsp; คอลัมน์ O = ผลการปฏิบัติงาน</p>
         </div>
     </div>
 
-    <button class="btn-main" onclick="processData()">🚀 ตรวจสอบข้อมูล</button>
+    <div id="alertBox"></div>
+    <button class="btn" onclick="processData()" id="btnRun">🚀 ตรวจสอบข้อมูล</button>
 
-    <div id="resultView" style="display: none;">
+    <div id="resultView" style="display:none;">
         <div class="summary-grid">
-            <div class="stat-card">
-                <span class="stat-value" id="countDmsx">0</span>
-                <small>รายการ DMSx</small>
+            <div class="stat purple">
+                <span class="stat-val" id="cntSap">0</span>
+                <span class="stat-label">รายการ SAP</span>
             </div>
-            <div class="stat-card">
-                <span class="stat-value" id="countSap">0</span>
-                <small>รายการ SAP</small>
+            <div class="stat purple">
+                <span class="stat-val" id="cntDm">0</span>
+                <span class="stat-label">รายการ DM</span>
             </div>
-            <div class="stat-card" style="color: var(--success)">
-                <span class="stat-value" id="countMatch">0</span>
-                <small>ข้อมูลตรงกัน</small>
+            <div class="stat green">
+                <span class="stat-val" id="cntMatch">0</span>
+                <span class="stat-label">✓ สถานะตรงกัน</span>
             </div>
-            <div class="stat-card" style="color: var(--danger)">
-                <span class="stat-value" id="countMismatch">0</span>
-                <small>ไม่ตรงกัน </small>
+            <div class="stat red">
+                <span class="stat-val" id="cntMismatch">0</span>
+                <span class="stat-label">✗ สถานะไม่ตรงกัน</span>
+            </div>
+            <div class="stat" style="color:#854d0e">
+                <span class="stat-val" id="cntNotFound">0</span>
+                <span class="stat-label">⚠ ไม่พบใน DM</span>
             </div>
         </div>
 
-        <div class="table-container">
-            <table id="resultTable">
+        <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+
+        <div class="tabs">
+            <button class="tab active-match" onclick="showTab('match')">✓ ตรงกัน (<span id="tabCntMatch">0</span>)</button>
+            <button class="tab" onclick="showTab('mismatch')">✗ ไม่ตรงกัน (<span id="tabCntMismatch">0</span>)</button>
+            <button class="tab" onclick="showTab('notfound')">⚠ ไม่พบใน DM (<span id="tabCntNotFound">0</span>)</button>
+        </div>
+
+        <div class="table-wrap">
+            <table>
                 <thead>
                     <tr>
-                        <th>หมายเลขผู้ใช้ไฟ</th>
-                        <th>Pea No</th>
-                        <th>สถานะ (SAP)</th>
-                        <th>สถานะ (DMSx)</th>
+                        <th>#</th>
+                        <th>PEA No (มิเตอร์)</th>
+                        <th>CA (SAP)</th>
+                        <th>สถานะ SAP<br><small style="font-weight:400">(การดำเนินการ)</small></th>
+                        <th>สถานะ DM<br><small style="font-weight:400">(ผลการปฏิบัติงาน)</small></th>
                         <th>ผลลัพธ์</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody id="tbody"></tbody>
             </table>
+            <div id="emptyMsg" class="empty-state" style="display:none;">ไม่มีข้อมูลในหมวดนี้</div>
         </div>
     </div>
 </div>
 
 <script>
-    const SOURCE_CONFIG = {
-        sap: {
-            label: "SAP",
-            fields: {
-                customerNo: ["บัญชีแสดงสัญญา"],
-                peaNo: ["เลขที่มิเตอร์ที่ดำเนินการ"],
-                status: ["การดำเนินการ"],
-                jobNo: ["ใบแจ้งดำเนินการ"]
-            }
-        },
-        dmsx: {
-            label: "DMSx",
-            fields: {
-                customerNo: ["CA", "หมายเลขผู้ใช้ไฟ"],
-                peaNo: ["PEA No", "Pea No"],
-                status: ["สถานะล่าสุด", "สถานะ"],
-                jobNo: ["ใบแจ้งดำเนินการ"]
-            }
-        }
-    };
+    // ---- ข้อมูลผลลัพธ์ทั้งหมด ----
+    let allRows = [];
+    let activeTab = 'match';
 
-    function parseHtmlTableToJson(htmlText) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlText, "text/html");
-        const table = doc.querySelector("table");
-
-        if (!table) {
-            return [];
-        }
-
-        const rows = Array.from(table.querySelectorAll("tr"))
-            .map(tr => Array.from(tr.querySelectorAll("td, th")).map(cell =>
-                normalizeValue(cell.textContent.replace(/\s+/g, " "))
-            ))
-            .filter(row => row.some(cell => cell));
-
-        const headerIndex = rows.findIndex(row =>
-            row.some(cell => cell.toLowerCase() === "ca") &&
-            row.some(cell => cell.toLowerCase() === "pea no")
-        );
-
-        if (headerIndex === -1) {
-            console.log("[UPLOAD] ไม่พบ header ของ HTML table", {
-                previewRows: rows.slice(0, 5)
-            });
-            return [];
-        }
-
-        const headers = rows[headerIndex];
-
-        return rows.slice(headerIndex + 1).map(row => {
-            const normalizedRow = [...row];
-            while (normalizedRow.length < headers.length) {
-                normalizedRow.push("");
-            }
-
-            return Object.fromEntries(
-                headers.map((header, index) => [header, normalizedRow[index] ?? ""])
-            );
-        });
+    // ---- Utility ----
+    function norm(val) {
+        return String(val ?? "").replace(/^\uFEFF/, "").replace(/^'+/, "").replace(/\s+/g, " ").trim();
     }
 
-    // ฟังก์ชันอ่านไฟล์ทั้ง CSV, Excel และ HTML table ที่ถูกเซฟเป็น .xls
-    async function readFileData(file) {
+    function normId(val) {
+        return norm(val).replace(/\([^)]*\)/g, "").replace(/[^0-9]/g, "").trim();
+    }
+
+    function simplifyStatus(status) {
+        const s = norm(status).toLowerCase();
+        if (s.includes("ปลดสาย")) return "ปลดสาย";
+        if (s.includes("ต่อสาย")) return "ต่อสาย";
+        if (s.includes("ผ่อน")) return "ผ่อนผัน";
+        if (s.includes("ระงับ")) return "ระงับ";
+        return norm(status);
+    }
+
+    // ---- อ่านไฟล์ Excel / XLS / CSV ----
+    async function readFile(file) {
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = (e) => {
-                const fileContent = e.target.result;
-                const isTextContent = typeof fileContent === "string";
-                const isHtmlTable = isTextContent &&
-                    /^\s*</.test(fileContent) &&
-                    fileContent.toLowerCase().includes("<table");
-
-                const rows = isHtmlTable
-                    ? parseHtmlTableToJson(fileContent)
-                    : (() => {
-                        const workbook = XLSX.read(new Uint8Array(fileContent), {
-                            type: 'array',
-                            raw: false,
-                            dense: false
-                        });
-                        const firstSheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[firstSheetName];
-                        return XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-                    })();
-
-                console.log("[UPLOAD] อ่านไฟล์สำเร็จ", {
-                    fileName: file.name,
-                    fileType: isHtmlTable ? "html-table" : "spreadsheet",
-                    totalRows: rows.length,
-                    preview: rows.slice(0, 5)
-                });
-
-                resolve(rows);
+                const content = e.target.result;
+                let workbook;
+                // ตรวจว่าเป็น HTML table ที่บันทึกเป็น .xls
+                if (typeof content === "string" && /^\s*</.test(content) && content.toLowerCase().includes("<table")) {
+                    const rows = parseHtmlTable(content);
+                    resolve(rows);
+                } else {
+                    workbook = XLSX.read(new Uint8Array(content), { type: 'array', raw: false });
+                    const ws = workbook.Sheets[workbook.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+                    resolve(rows);
+                }
             };
-            const extension = file.name.split(".").pop().toLowerCase();
-            if (extension === "xls") {
-                reader.readAsText(file);
-            } else {
-                reader.readAsArrayBuffer(file);
-            }
+            const ext = file.name.split(".").pop().toLowerCase();
+            if (ext === "xls") reader.readAsText(file);
+            else reader.readAsArrayBuffer(file);
         });
     }
 
-    function normalizeValue(value) {
-        return String(value ?? "")
-            .replace(/^\uFEFF/, "")
-            .replace(/^'+/, "")
-            .replace(/\s+/g, " ")
-            .trim();
+    function parseHtmlTable(html) {
+        const doc = new DOMParser().parseFromString(html, "text/html");
+        const table = doc.querySelector("table");
+        if (!table) return [];
+        return Array.from(table.querySelectorAll("tr")).map(tr =>
+            Array.from(tr.querySelectorAll("td,th")).map(td => norm(td.textContent))
+        );
     }
 
-    function normalizeIdentifier(value) {
-        return normalizeValue(value)
-            .replace(/\(\s*\d+\s*phase\s*\)/gi, "")
-            .replace(/\([^)]*\)/g, "")
-            .replace(/<[^>]*>/g, "")
-            .replace(/[^0-9A-Za-z]/g, "")
-            .trim();
-    }
-
-    function findColumnValue(obj, aliases) {
-        const foundKey = Object.keys(obj).find(key => {
-            const normalizedKey = normalizeValue(key).toLowerCase();
-            return aliases.some(alias => normalizedKey.includes(normalizeValue(alias).toLowerCase()));
-        });
-
-        return foundKey ? normalizeValue(obj[foundKey]) : "";
-    }
-
-    function simplifyStatus(status, sourceType) {
-        const normalizedStatus = normalizeValue(status).toLowerCase();
-
-        if (!normalizedStatus) {
-            return "";
+    // ---- แปลง raw rows เป็น array of objects โดยใช้ header row ที่ระบุ ----
+    function parseRows(rawRows, headerRowIndex) {
+        const headers = rawRows[headerRowIndex].map(h => norm(h));
+        const result = [];
+        for (let i = headerRowIndex + 1; i < rawRows.length; i++) {
+            const row = rawRows[i];
+            // ข้ามแถวว่าง
+            if (row.every(c => !norm(c))) continue;
+            const obj = {};
+            headers.forEach((h, idx) => { obj[h] = norm(row[idx] ?? ""); });
+            result.push(obj);
         }
-
-        if (sourceType === "sap") {
-            if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
-            if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
-            if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
-            return normalizeValue(status);
-        }
-
-        if (normalizedStatus.includes("ปลดสาย")) return "ปลดสาย";
-        if (normalizedStatus.includes("ต่อสาย")) return "ต่อสาย";
-        if (normalizedStatus.includes("ผ่อน")) return "ผ่อนผัน";
-        if (normalizedStatus.includes("ระงับ")) return "ระงับ";
-        return normalizeValue(status);
+        return result;
     }
 
-    function getMissingColumns(rows, sourceType, fileName) {
-        if (!rows.length) {
-            return [`${fileName}: ไม่พบข้อมูลในไฟล์`];
-        }
-
-        const headers = Object.keys(rows[0]).map(header => normalizeValue(header).toLowerCase());
-        return Object.entries(SOURCE_CONFIG[sourceType].fields)
-            .filter(([, aliases]) =>
-                !aliases.some(alias =>
-                    headers.some(header => header.includes(normalizeValue(alias).toLowerCase()))
-                )
-            )
-            .map(([fieldName, aliases]) => `${fileName} -> ${fieldName}: ${aliases.join(" / ")}`);
-    }
-
-    function buildMatchKey(customerNo, peaNo) {
-        return `${normalizeIdentifier(customerNo)}|${normalizeIdentifier(peaNo)}`;
-    }
-
-    async function loadFiles(fileList, sourceType) {
-        const files = Array.from(fileList);
-        const allRows = [];
-        const missingColumns = [];
-
-        for (const file of files) {
-            const rows = await readFileData(file);
-            const fileMissingColumns = getMissingColumns(rows, sourceType, file.name);
-
-            if (fileMissingColumns.length) {
-                missingColumns.push(...fileMissingColumns);
-                continue;
+    // ---- หาแถว header ของ SAP (แถวแรก) ----
+    function findSapHeaderRow(rawRows) {
+        // SAP: header อยู่แถวแรก
+        for (let i = 0; i < Math.min(5, rawRows.length); i++) {
+            if (rawRows[i].some(c => norm(c) === "การดำเนินการ") &&
+                rawRows[i].some(c => norm(c) === "เลขที่มิเตอร์ที่ดำเนินการ")) {
+                return i;
             }
-
-            rows.forEach(row => {
-                allRows.push({
-                    ...row,
-                    __fileName: file.name
-                });
-            });
         }
-
-        return {
-            rows: allRows,
-            missingColumns
-        };
+        return 0; // fallback
     }
 
+    // ---- หาแถว header ของ DM (แถวที่มี "PEA No" และ "ผลการปฏิบัติงาน") ----
+    function findDmHeaderRow(rawRows) {
+        for (let i = 0; i < Math.min(10, rawRows.length); i++) {
+            if (rawRows[i].some(c => norm(c) === "PEA No") &&
+                rawRows[i].some(c => norm(c) === "ผลการปฏิบัติงาน")) {
+                return i;
+            }
+        }
+        return 1; // fallback: DM มักมี title row ก่อน
+    }
+
+    // ---- หา column value จาก object ด้วย alias ----
+    function getField(obj, aliases) {
+        const found = Object.keys(obj).find(k =>
+            aliases.some(a => norm(k).toLowerCase().includes(norm(a).toLowerCase()))
+        );
+        return found ? norm(obj[found]) : "";
+    }
+
+    // ---- ประมวลผลหลัก ----
     async function processData() {
-        const sapFiles = document.getElementById('fileSap').files;
-        const dmsxFiles = document.getElementById('fileDmsx').files;
+        const sapFile = document.getElementById('fileSap').files[0];
+        const dmFile = document.getElementById('fileDm').files[0];
+        const alertBox = document.getElementById('alertBox');
+        alertBox.innerHTML = '';
 
-        if (!sapFiles.length || !dmsxFiles.length) {
-            alert("กรุณาอัปโหลดไฟล์ SAP และ DMSx อย่างน้อยฝั่งละ 1 ไฟล์");
+        if (!sapFile || !dmFile) {
+            alertBox.innerHTML = '<div class="alert alert-error">⚠ กรุณาเลือกไฟล์ SAP และ DM ให้ครบ</div>';
             return;
         }
 
-        const sapResult = await loadFiles(sapFiles, "sap");
-        const dmsxResult = await loadFiles(dmsxFiles, "dmsx");
-        const dataSap = sapResult.rows;
-        const dataDmsx = dmsxResult.rows;
-        const sapMissingColumns = sapResult.missingColumns;
-        const dmsxMissingColumns = dmsxResult.missingColumns;
+        document.getElementById('btnRun').disabled = true;
+        document.getElementById('btnRun').textContent = '⏳ กำลังประมวลผล...';
 
-        if (sapMissingColumns.length || dmsxMissingColumns.length) {
-            console.log("[VALIDATION] ตรวจพบคอลัมน์ที่ไม่พร้อมใช้งาน", {
-                sapMissingColumns,
-                dmsxMissingColumns
+        try {
+            const [rawSap, rawDm] = await Promise.all([readFile(sapFile), readFile(dmFile)]);
+
+            const sapHeaderRow = findSapHeaderRow(rawSap);
+            const dmHeaderRow  = findDmHeaderRow(rawDm);
+
+            const sapData = parseRows(rawSap, sapHeaderRow);
+            const dmData  = parseRows(rawDm,  dmHeaderRow);
+
+            console.log("[SAP] headers:", Object.keys(sapData[0] ?? {}));
+            console.log("[DM] headers:", Object.keys(dmData[0] ?? {}));
+            console.log("[SAP] rows:", sapData.length, "[DM] rows:", dmData.length);
+
+            // ---- สร้าง index จาก DM โดยใช้ PEA No เป็น key ----
+            const dmIndex = new Map();
+            dmData.forEach((row, idx) => {
+                const peaNo = normId(getField(row, ["PEA No", "Pea No"]));
+                if (!peaNo) return;
+                if (!dmIndex.has(peaNo)) {
+                    dmIndex.set(peaNo, row);
+                } else {
+                    console.log("[DM] duplicate PEA No:", peaNo, "row:", idx + 2);
+                }
             });
-            alert("โครงสร้างไฟล์ไม่ถูกต้อง กรุณาตรวจสอบคอลัมน์ของไฟล์จริงชุดใหม่ใน Console");
-            return;
+
+            // ---- จับคู่ SAP กับ DM ----
+            allRows = [];
+            let cntMatch = 0, cntMismatch = 0, cntNotFound = 0;
+
+            sapData.forEach((sapRow, idx) => {
+                const peaRaw   = getField(sapRow, ["เลขที่มิเตอร์ที่ดำเนินการ"]);
+                const peaNo    = normId(peaRaw);
+                const caNo     = getField(sapRow, ["บัญชีแสดงสัญญา"]);
+                const sapStatusRaw = getField(sapRow, ["การดำเนินการ"]);
+                const sapStatus    = simplifyStatus(sapStatusRaw);
+
+                if (!peaNo) return;
+
+                const dmRow = dmIndex.get(peaNo);
+                if (!dmRow) {
+                    cntNotFound++;
+                    allRows.push({ peaNo: peaRaw, caNo, sapStatus, dmStatus: "-", result: "notfound" });
+                    return;
+                }
+
+                const dmStatusRaw = getField(dmRow, ["ผลการปฏิบัติงาน"]);
+                const dmStatus    = simplifyStatus(dmStatusRaw);
+                const isMatch     = sapStatus === dmStatus && sapStatus !== "";
+
+                isMatch ? cntMatch++ : cntMismatch++;
+                allRows.push({ peaNo: peaRaw, caNo, sapStatus, dmStatus, result: isMatch ? "match" : "mismatch" });
+            });
+
+            // ---- อัปเดต summary ----
+            document.getElementById('cntSap').textContent      = sapData.length;
+            document.getElementById('cntDm').textContent       = dmData.length;
+            document.getElementById('cntMatch').textContent    = cntMatch;
+            document.getElementById('cntMismatch').textContent = cntMismatch;
+            document.getElementById('cntNotFound').textContent = cntNotFound;
+            document.getElementById('tabCntMatch').textContent    = cntMatch;
+            document.getElementById('tabCntMismatch').textContent = cntMismatch;
+            document.getElementById('tabCntNotFound').textContent = cntNotFound;
+
+            document.getElementById('resultView').style.display = 'block';
+            showTab('match');
+
+        } catch (err) {
+            alertBox.innerHTML = `<div class="alert alert-error">❌ เกิดข้อผิดพลาด: ${err.message}</div>`;
+            console.error(err);
+        } finally {
+            document.getElementById('btnRun').disabled = false;
+            document.getElementById('btnRun').textContent = '🚀 ตรวจสอบข้อมูล';
         }
+    }
 
-        console.log("[PROCESS] เริ่มประมวลผลข้อมูล", {
-            sapFiles: Array.from(sapFiles, file => file.name),
-            dmsxFiles: Array.from(dmsxFiles, file => file.name),
-            sapRows: dataSap.length,
-            dmsxRows: dataDmsx.length
+    // ---- แสดงตารางตาม tab ----
+    function showTab(tab) {
+        activeTab = tab;
+        // อัปเดต active state ของ tab buttons
+        document.querySelectorAll('.tab').forEach((btn, i) => {
+            btn.className = 'tab';
         });
+        const tabs = document.querySelectorAll('.tab');
+        const tabMap = { match: 0, mismatch: 1, notfound: 2 };
+        const activeClasses = { match: 'active-match', mismatch: 'active-mismatch', notfound: 'active-notfound' };
+        tabs[tabMap[tab]].classList.add(activeClasses[tab]);
 
-        let mCount = 0, misCount = 0;
-        const tbody = document.querySelector("#resultTable tbody");
-        tbody.innerHTML = "";
-        const dmsxIndex = new Map();
+        const filtered = allRows.filter(r => r.result === tab);
+        const tbody = document.getElementById('tbody');
+        tbody.innerHTML = '';
 
-        dataDmsx.forEach((dmsxItem, index) => {
-            const key = buildMatchKey(
-                findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.customerNo),
-                findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.peaNo)
-            );
+        if (!filtered.length) {
+            document.getElementById('emptyMsg').style.display = 'block';
+        } else {
+            document.getElementById('emptyMsg').style.display = 'none';
+            filtered.forEach((r, i) => {
+                let badge = '';
+                if (r.result === 'match')    badge = '<span class="badge badge-ok">✓ ตรงกัน</span>';
+                if (r.result === 'mismatch') badge = '<span class="badge badge-fail">✗ ไม่ตรงกัน</span>';
+                if (r.result === 'notfound') badge = '<span class="badge badge-warn">⚠ ไม่พบใน DM</span>';
 
-            if (!key || key === "|") {
-                console.log("[INDEX] ข้ามข้อมูล DMSx ที่ key ไม่สมบูรณ์", {
-                    rowNumber: index + 2,
-                    fileName: dmsxItem.__fileName,
-                    rowData: dmsxItem
-                });
-                return;
-            }
-
-            if (!dmsxIndex.has(key)) {
-                dmsxIndex.set(key, dmsxItem);
-            } else {
-                console.log("[INDEX] พบข้อมูล DMSx ซ้ำ key เดิม", {
-                    rowNumber: index + 2,
-                    fileName: dmsxItem.__fileName,
-                    key,
-                    rowData: dmsxItem
-                });
-            }
-        });
-
-        console.log("[INDEX] สร้างดัชนี DMSx สำเร็จ", {
-            indexedRows: dmsxIndex.size,
-            sourceRows: dataDmsx.length
-        });
-
-        // วนลูปเช็คโดยอิงจาก SAP เป็นหลัก หรือจะเลือกเช็คฝั่งที่มีข้อมูลก็ได้
-        dataSap.forEach((sapItem, index) => {
-            const sapId = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.customerNo);
-            const sapPea = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.peaNo);
-            const sapStatusRaw = findColumnValue(sapItem, SOURCE_CONFIG.sap.fields.status);
-            const sapStatus = simplifyStatus(sapStatusRaw, "sap");
-            const matchKey = buildMatchKey(sapId, sapPea);
-
-            const dmsxItem = dmsxIndex.get(matchKey);
-
-            if (dmsxItem) {
-                const dmsxStatusRaw = findColumnValue(dmsxItem, SOURCE_CONFIG.dmsx.fields.status);
-                const dmsxStatus = simplifyStatus(dmsxStatusRaw, "dmsx");
-                const isMatch = (sapStatus === dmsxStatus);
-
-                isMatch ? mCount++ : misCount++;
-
-                console.log("[MATCH]", {
-                    rowNumber: index + 2,
-                    fileName: sapItem.__fileName,
-                    key: matchKey,
-                    sapId,
-                    sapPea,
-                    sapStatusRaw,
-                    sapStatus,
-                    dmsxStatusRaw,
-                    dmsxStatus,
-                    result: isMatch ? "MATCH" : "MISMATCH"
-                });
-
-                const row = `
+                tbody.insertAdjacentHTML('beforeend', `
                     <tr>
-                        <td>${sapId}</td>
-                        <td style="font-family:monospace"><b>${sapPea}</b></td>
-                        <td>${sapStatus}</td>
-                        <td>${dmsxStatus}</td>
-                        <td>
-                            <span class="badge ${isMatch ? 'badge-success' : 'badge-error'}">
-                                ${isMatch ? '✓ ตรงกัน' : '✗ ไม่ตรงกัน'}
-                            </span>
-                        </td>
-                    </tr>`;
-                tbody.insertAdjacentHTML('beforeend', row);
-            } else {
-                console.log("[MATCH] ไม่พบข้อมูลคู่ใน DMSx", {
-                    rowNumber: index + 2,
-                    fileName: sapItem.__fileName,
-                    key: matchKey,
-                    sapId,
-                    sapPea,
-                    sapStatusRaw
-                });
-            }
-        });
+                        <td>${i + 1}</td>
+                        <td><code>${r.peaNo}</code></td>
+                        <td><code>${r.caNo}</code></td>
+                        <td>${r.sapStatus}</td>
+                        <td>${r.dmStatus}</td>
+                        <td>${badge}</td>
+                    </tr>`);
+            });
+        }
+    }
 
-        console.log("[SUMMARY] สรุปผลการจับคู่", {
-            sapRows: dataSap.length,
-            dmsxRows: dataDmsx.length,
-            matchCount: mCount,
-            mismatchCount: misCount
-        });
-
-        document.getElementById('countDmsx').innerText = dataDmsx.length;
-        document.getElementById('countSap').innerText = dataSap.length;
-        document.getElementById('countMatch').innerText = mCount;
-        document.getElementById('countMismatch').innerText = misCount;
-        document.getElementById('resultView').style.display = 'block';
+    // ---- Export CSV ----
+    function exportCSV() {
+        if (!allRows.length) return;
+        const resultLabel = { match: 'ตรงกัน', mismatch: 'ไม่ตรงกัน', notfound: 'ไม่พบใน DM' };
+        const rows = [['PEA No', 'CA (SAP)', 'สถานะ SAP', 'สถานะ DM', 'ผลลัพธ์']];
+        allRows.forEach(r => rows.push([r.peaNo, r.caNo, r.sapStatus, r.dmStatus, resultLabel[r.result]]));
+        const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'match_result.csv';
+        a.click();
     }
 </script>
 
