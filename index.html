@@ -47,15 +47,14 @@
         .tab.t-match    { border-color:#22c55e; background:#dcfce7; color:#166534; }
         .tab.t-nosap    { border-color:#0284c7; background:#e0f2fe; color:#075985; }
         .tab.t-nodm     { border-color:#eab308; background:#fef9c3; color:#854d0e; }
-        .export-btn { background:#0f172a; color:#fff; border:none; padding:.5rem 1.1rem; border-radius:6px; font-family:'Sarabun',sans-serif; font-size:.88rem; cursor:pointer; white-space:nowrap; }
+        .export-btn { background:#0f172a; color:#fff; border:none; padding:.5rem 1.1rem; border-radius:6px; font-family:'Sarabun',sans-serif; font-size:.88rem; cursor:pointer; white-space:nowrap; user-select:none; }
         .export-btn:hover { background:#1e293b; }
-        .export-pdf { background:#b91c1c; }
-        .export-pdf:hover { background:#991b1b; }
         /* dropdown */
         .export-wrap { position:relative; margin-left:auto; }
-        .export-menu { display:none; position:absolute; right:0; top:calc(100% + 6px); background:#fff; border:1px solid var(--border); border-radius:8px; box-shadow:0 8px 24px rgba(0,0,0,.12); min-width:160px; z-index:999; overflow:hidden; }
+        .export-menu { display:none; position:absolute; right:0; top:calc(100% + 6px); background:#fff; border:1px solid var(--border); border-radius:10px; box-shadow:0 8px 28px rgba(0,0,0,.15); min-width:170px; z-index:999; overflow:hidden; animation:fadeIn .15s ease; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(-4px)} to{opacity:1;transform:translateY(0)} }
         .export-menu.open { display:block; }
-        .export-item { display:flex; align-items:center; gap:.5rem; padding:.7rem 1rem; font-family:'Sarabun',sans-serif; font-size:.9rem; cursor:pointer; color:#1e293b; transition:background .15s; }
+        .export-item { display:flex; align-items:center; gap:.6rem; padding:.75rem 1.1rem; font-family:'Sarabun',sans-serif; font-size:.92rem; cursor:pointer; color:#1e293b; transition:background .15s; }
         .export-item:hover { background:#f1f5f9; }
         .export-item-pdf { border-top:1px solid var(--border); color:#b91c1c; }
         .export-item-pdf:hover { background:#fff1f2; }
@@ -182,8 +181,24 @@ async function loadXlsx(){
 /* ══════════════════════════════════════════════════
    STATUS MAP
 ══════════════════════════════════════════════════ */
-const DM_CODE = { 'FURM':'ปลดสาย', 'WMST':'ผ่อนผัน 1', 'WMS2':'ผ่อนผัน 2', 'FUCN':'ต่อสาย' };
+const DM_CODE = {
+    'FURM' : 'ปลดสาย',
+    'WMST' : 'ผ่อนผัน 1',
+    'WMS2' : 'ผ่อนผัน 2',
+    'FUCN' : 'ต่อสาย',
+    'DSTP' : 'ระงับ',
+};
 
+function extractDmCode(raw){
+    const s = String(raw??'').replace(/^'+/,'').trim();
+    const code4 = s.substring(0,4).toUpperCase();
+    return DM_CODE[code4] ? code4 : s.toUpperCase();
+}
+
+function normStatusDm(raw){
+    const code = extractDmCode(raw);
+    return DM_CODE[code] || String(raw??'').trim();
+}
 function normStatusSap(v){
     const s = String(v??'').trim().toLowerCase();
     if(!s) return '';
@@ -196,10 +211,7 @@ function normStatusSap(v){
     return String(v??'').trim();
 }
 
-function normStatusDm(code){
-    const c = String(code??'').trim().toUpperCase();
-    return DM_CODE[c] || String(code??'').trim();
-}
+
 
 /* ══════════════════════════════════════════════════
    FILE STORE
@@ -262,15 +274,37 @@ function sniffIsHtml(file){
 
 /* ══════════════════════════════════════════════════
    PARSE DM HTML TRIANGULAR TABLE
-   แต่ละ <tr> มี cells = N×18; เอา 18 cells แรก
+   รองรับ 2 format อัตโนมัติ:
+   Format A (18 cols): col[14] = ผลการปฏิบัติงาน  → FURM/WMST/WMS2
+   Format B (17 cols): col[13] = สถานะล่าสุด      → FUCNต่อสายแล้ว / WMSTปิดงาน...
+   Focus FUCN → ต่อสาย เพื่อ Match กับ SAP
 ══════════════════════════════════════════════════ */
-const DM_COLS = 18;
-
 function parseDmHtml(html, srcName){
     const doc = new DOMParser().parseFromString(html,'text/html');
     const trs = doc.querySelectorAll('tr');
     const out = [];
     const seenPea = new Set();
+
+    // ตรวจ DM_COLS อัตโนมัติจาก tr แรกที่มีข้อมูล
+    let DM_COLS = 0;
+    for(const tr of trs){
+        const cells = Array.from(tr.querySelectorAll('td,th')).map(td=>norm(td.textContent));
+        if(cells.length < 17) continue;
+        for(const cols of [17, 18]){
+            if(cells.length % cols === 0){
+                const rec = cells.slice(0, cols);
+                const seq = rec[0].replace(/\.0+$/,'').trim();
+                if(seq && !isNaN(Number(seq))){ DM_COLS = cols; break; }
+            }
+        }
+        if(DM_COLS) break;
+    }
+    if(!DM_COLS) DM_COLS = 18;
+
+    const COL_STATUS = DM_COLS === 17 ? 13 : 14;
+    const COL_PEA = 8, COL_CA = 5, COL_NAME = 6;
+
+    console.log('[DM] ' + srcName + ': format=' + DM_COLS + 'cols, statusCol=' + COL_STATUS);
 
     trs.forEach(tr=>{
         const cells = Array.from(tr.querySelectorAll('td,th')).map(td=>norm(td.textContent));
@@ -280,17 +314,21 @@ function parseDmHtml(html, srcName){
         const seq = rec[0].replace(/\.0+$/,'').trim();
         if(!seq || isNaN(Number(seq))) return;
 
-        const pea = normPea(rec[8]);
+        const pea = normPea(rec[COL_PEA]);
         if(!pea || seenPea.has(pea)) return;
         seenPea.add(pea);
 
-        const stRaw = rec[14].trim().toUpperCase();
+        const stFull = rec[COL_STATUS].trim();
+        const stCode = extractDmCode(stFull);
+        const stNorm = normStatusDm(stFull);
+
         out.push({
             pea,
-            statusRaw  : stRaw,
-            statusNorm : normStatusDm(stRaw),
-            ca   : norm(rec[5]),
-            name : norm(rec[6]),
+            statusRaw  : stCode,
+            statusFull : stFull,
+            statusNorm : stNorm,
+            ca   : norm(rec[COL_CA]),
+            name : norm(rec[COL_NAME]),
             src  : srcName
         });
     });
@@ -548,6 +586,22 @@ function showTab(tab){
             <td>${BADGES[tab]}</td></tr>`));
     }
 }
+
+/* ══════════════════════════════════════════════════
+   EXPORT DROPDOWN
+══════════════════════════════════════════════════ */
+function toggleExportMenu(e){
+    e.stopPropagation();
+    document.getElementById('exportMenu').classList.toggle('open');
+}
+function closeExportMenu(){
+    document.getElementById('exportMenu').classList.remove('open');
+}
+// ปิด dropdown เมื่อคลิกที่อื่น
+document.addEventListener('click', function(e){
+    const wrap = document.getElementById('exportWrap');
+    if(wrap && !wrap.contains(e.target)) closeExportMenu();
+});
 
 /* ══════════════════════════════════════════════════
    REFRESH
