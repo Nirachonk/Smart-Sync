@@ -27,6 +27,17 @@
         .drop-zone:hover,.drop-zone.over { border-color:var(--primary); background:#f5f3ff; }
         .drop-zone input { display:none; }
         .drop-zone label { cursor:pointer; font-weight:600; color:var(--primary); }
+
+        /* DM type toggle */
+        .dm-toggle { display:flex; border-radius:8px; overflow:hidden; border:1.5px solid var(--border); margin-bottom:.9rem; }
+        .dm-toggle-btn { flex:1; padding:.55rem .5rem; font-family:'Sarabun',sans-serif; font-size:.88rem; font-weight:600; border:none; background:#f8fafc; color:#64748b; cursor:pointer; transition:background .18s,color .18s; line-height:1.3; }
+        .dm-toggle-btn:first-child { border-right:1.5px solid var(--border); }
+        .dm-toggle-btn.active-disc { background:#4c1d95; color:#fff; }
+        .dm-toggle-btn.active-conn { background:#047857; color:#fff; }
+        .drop-zone.dm-conn { border-color:#10b981; }
+        .drop-zone.dm-conn:hover,.drop-zone.dm-conn.over { border-color:#047857; background:#ecfdf5; }
+        .drop-zone.dm-conn label { color:#047857; }
+
         .btn { width:100%; background:var(--primary); color:#fff; border:none; padding:1rem; border-radius:8px; font-size:1.15rem; font-weight:700; cursor:pointer; font-family:'Sarabun',sans-serif; transition:.2s; }
         .btn:hover    { background:#5b21b6; transform:translateY(-2px); }
         .btn:disabled { background:#94a3b8; transform:none; cursor:not-allowed; }
@@ -46,7 +57,6 @@
         .tab { padding:.55rem 1rem; border-radius:8px; border:2px solid var(--border); background:#fff; cursor:pointer; font-family:'Sarabun',sans-serif; font-size:.9rem; font-weight:600; transition:.2s; white-space:nowrap; }
         .tab.t-match    { border-color:#22c55e; background:#dcfce7; color:#166534; }
         .tab.t-nosap    { border-color:#0284c7; background:#e0f2fe; color:#075985; }
-        .tab.t-nodm     { border-color:#eab308; background:#fef9c3; color:#854d0e; }
         .export-btn { background:#0f172a; color:#fff; border:none; padding:.5rem 1.1rem; border-radius:6px; font-family:'Sarabun',sans-serif; font-size:.88rem; cursor:pointer; white-space:nowrap; user-select:none; }
         .export-btn:hover { background:#1e293b; }
         /* dropdown */
@@ -69,7 +79,6 @@
         .badge-ok    { background:#dcfce7; color:#166534; }
         .badge-fail  { background:#fee2e2; color:#991b1b; }
         .badge-nosap { background:#e0f2fe; color:#075985; }
-        .badge-nodm  { background:#fef9c3; color:#854d0e; }
         .st { display:inline-flex; align-items:center; gap:.3rem; }
         .st-code { font-family:'Courier New',monospace; font-size:.78rem; background:#e2e8f0; padding:.1rem .35rem; border-radius:4px; color:#334155; }
         .empty-state { text-align:center; padding:3rem; color:#94a3b8; }
@@ -85,7 +94,8 @@
 </div>
 
 <div class="container">
-    <div class="upload-grid">
+    <div class="upload-grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));">
+        <!-- SAP -->
         <div class="upload-card">
             <h3>📋 ไฟล์ SAP</h3>
             <div class="drop-zone" id="dropSap"
@@ -98,17 +108,31 @@
             </div>
             <div class="file-list" id="listSap"></div>
         </div>
-        <div class="upload-card">
+
+        <!-- DM unified card with toggle -->
+        <div class="upload-card" id="dmCard">
             <h3>📋 ไฟล์ DM</h3>
+            <!-- toggle -->
+            <div class="dm-toggle">
+                <button class="dm-toggle-btn active-disc" id="btnDisc" onclick="setDmMode('disc')">
+                    🔴 ปลดสาย / ผ่อนผัน
+                </button>
+                <button class="dm-toggle-btn" id="btnConn" onclick="setDmMode('conn')">
+                    🟢 ต่อสาย
+                </button>
+            </div>
+            <!-- drop zone — เปลี่ยน style ตาม mode -->
             <div class="drop-zone" id="dropDm"
                  ondragover="onDragOver(event,'dropDm')"
                  ondragleave="onDragLeave('dropDm')"
-                 ondrop="onDrop(event,'dm')">
-                <input type="file" id="fileDm" accept=".xls,.xlsx,.csv" multiple onchange="addFiles('dm',this.files)">
-                <label for="fileDm">📂 คลิกเพื่อเลือกไฟล์ หรือลากวาง</label>
-                <p class="hint">รองรับหลายไฟล์ (.xls / .xlsx / .csv)</p>
+                 ondrop="onDropDm(event)">
+                <input type="file" id="fileDm" accept=".xls,.xlsx,.csv" multiple onchange="addFilesDm(this.files)">
+                <label for="fileDm" id="dmDropLabel">📂 คลิกเพื่อเลือกไฟล์ หรือลากวาง</label>
+                <p class="hint" id="dmDropHint">รองรับหลายไฟล์ (.xls / .xlsx / .csv)</p>
             </div>
+            <!-- pills แยกตาม mode แต่แสดงรวมกัน -->
             <div class="file-list" id="listDm"></div>
+            <div class="file-list" id="listDmfucn"></div>
         </div>
     </div>
 
@@ -125,12 +149,10 @@
             <div class="stat purple"><span class="stat-val" id="cntDm">0</span><span class="stat-label">รายการ DM</span></div>
             <div class="stat green"> <span class="stat-val" id="cntMatch">0</span><span class="stat-label">✓ สถานะตรงกัน</span></div>
             <div class="stat sky">   <span class="stat-val" id="cntNoSap">0</span><span class="stat-label">⬅ ไม่พบใน SAP</span></div>
-            <div class="stat amber"> <span class="stat-val" id="cntNoDm">0</span><span class="stat-label">➡ ไม่พบใน DM</span></div>
         </div>
         <div class="tabs">
             <button id="tab-match" class="tab" onclick="showTab('match')">✓ ตรงกัน (<span id="tcMatch">0</span>)</button>
             <button id="tab-nosap" class="tab" onclick="showTab('nosap')">⬅ ไม่พบใน SAP (<span id="tcNoSap">0</span>)</button>
-            <button id="tab-nodm"  class="tab" onclick="showTab('nodm')">➡ ไม่พบใน DM (<span id="tcNoDm">0</span>)</button>
             <div class="export-wrap" id="exportWrap">
                 <button class="export-btn" onclick="toggleExportMenu(event)">⬇ Export ▾</button>
                 <div class="export-menu" id="exportMenu">
@@ -214,28 +236,70 @@ function normStatusSap(v){
 
 
 /* ══════════════════════════════════════════════════
-   FILE STORE
+   FILE STORE + DM MODE TOGGLE
 ══════════════════════════════════════════════════ */
-const fileStore = { sap:[], dm:[] };
+const fileStore = { sap:[], dm:[], dmfucn:[] };
+let dmMode = 'disc';   // 'disc' = ปลดสาย/ผ่อนผัน  |  'conn' = ต่อสาย FUCN
 
-function addFiles(side,list){
+function setDmMode(mode){
+    dmMode = mode;
+    const dropEl  = document.getElementById('dropDm');
+    const btnDisc = document.getElementById('btnDisc');
+    const btnConn = document.getElementById('btnConn');
+    const lblEl   = document.getElementById('dmDropLabel');
+    const hintEl  = document.getElementById('dmDropHint');
+    if(mode === 'disc'){
+        btnDisc.classList.add('active-disc');
+        btnConn.classList.remove('active-conn');
+        dropEl.classList.remove('dm-conn');
+        lblEl.style.color = '';
+        hintEl.textContent = 'รองรับหลายไฟล์ (.xls / .xlsx / .csv)';
+    } else {
+        btnConn.classList.add('active-conn');
+        btnDisc.classList.remove('active-disc');
+        dropEl.classList.add('dm-conn');
+        lblEl.style.color = '#047857';
+        hintEl.textContent = 'สถานะ FUCN — col N (สถานะล่าสุด)';
+    }
+}
+
+function addFilesDm(fileList){
+    const side = dmMode === 'conn' ? 'dmfucn' : 'dm';
+    Array.from(fileList).forEach(f=>{
+        if(!fileStore[side].find(e=>e.name===f.name&&e.size===f.size))
+            fileStore[side].push(f);
+    });
+    renderPills('dm');
+    renderPills('dmfucn');
+    document.getElementById('fileDm').value='';
+}
+
+function onDropDm(e){
+    e.preventDefault();
+    document.getElementById('dropDm').classList.remove('over');
+    addFilesDm(e.dataTransfer.files);
+}
+
+function addFiles(side, list){
     Array.from(list).forEach(f=>{
         if(!fileStore[side].find(e=>e.name===f.name&&e.size===f.size))
             fileStore[side].push(f);
     });
     renderPills(side);
-    document.getElementById(side==='sap'?'fileSap':'fileDm').value='';
+    if(side==='sap') document.getElementById('fileSap').value='';
 }
-function removeFile(side,i){ fileStore[side].splice(i,1); renderPills(side); }
+function removeFile(side,i){ fileStore[side].splice(i,1); renderPills(side); renderPills('dmfucn'); }
 function renderPills(side){
-    document.getElementById(side==='sap'?'listSap':'listDm').innerHTML=
+    const elId = {sap:'listSap', dm:'listDm', dmfucn:'listDmfucn'}[side];
+    const isConn = side === 'dmfucn';
+    document.getElementById(elId).innerHTML =
         fileStore[side].map((f,i)=>
-            `<span class="file-pill">📄 ${f.name}<span class="rm" onclick="removeFile('${side}',${i})">✕</span></span>`
+            `<span class="file-pill" style="${isConn?'background:#d1fae5;color:#065f46;':''}">${isConn?'🟢':'📄'} ${f.name}<span class="rm" onclick="removeFile('${side}',${i})">✕</span></span>`
         ).join('');
 }
 function onDragOver(e,id){ e.preventDefault(); document.getElementById(id).classList.add('over'); }
 function onDragLeave(id) { document.getElementById(id).classList.remove('over'); }
-function onDrop(e,side)  { e.preventDefault(); onDragLeave(side==='sap'?'dropSap':'dropDm'); addFiles(side,e.dataTransfer.files); }
+function onDrop(e,side)  { e.preventDefault(); onDragLeave('dropSap'); addFiles(side,e.dataTransfer.files); }
 
 /* ══════════════════════════════════════════════════
    HELPERS
@@ -273,65 +337,83 @@ function sniffIsHtml(file){
 }
 
 /* ══════════════════════════════════════════════════
-   PARSE DM HTML TRIANGULAR TABLE
-   รองรับ 2 format อัตโนมัติ:
-   Format A (18 cols): col[14] = ผลการปฏิบัติงาน  → FURM/WMST/WMS2
-   Format B (17 cols): col[13] = สถานะล่าสุด      → FUCNต่อสายแล้ว / WMSTปิดงาน...
-   Focus FUCN → ต่อสาย เพื่อ Match กับ SAP
+   PARSE DM HTML — FORMAT A (18 cols)
+   col[8]=PEA  col[14]=ผลการปฏิบัติงาน (FURM/WMST/WMS2)
+   col[5]=CA   col[6]=ชื่อ
 ══════════════════════════════════════════════════ */
 function parseDmHtml(html, srcName){
+    const DM_COLS = 18;
     const doc = new DOMParser().parseFromString(html,'text/html');
     const trs = doc.querySelectorAll('tr');
     const out = [];
     const seenPea = new Set();
 
-    // ตรวจ DM_COLS อัตโนมัติจาก tr แรกที่มีข้อมูล
-    let DM_COLS = 0;
-    for(const tr of trs){
-        const cells = Array.from(tr.querySelectorAll('td,th')).map(td=>norm(td.textContent));
-        if(cells.length < 17) continue;
-        for(const cols of [17, 18]){
-            if(cells.length % cols === 0){
-                const rec = cells.slice(0, cols);
-                const seq = rec[0].replace(/\.0+$/,'').trim();
-                if(seq && !isNaN(Number(seq))){ DM_COLS = cols; break; }
-            }
-        }
-        if(DM_COLS) break;
-    }
-    if(!DM_COLS) DM_COLS = 18;
-
-    const COL_STATUS = DM_COLS === 17 ? 13 : 14;
-    const COL_PEA = 8, COL_CA = 5, COL_NAME = 6;
-
-    console.log('[DM] ' + srcName + ': format=' + DM_COLS + 'cols, statusCol=' + COL_STATUS);
-
     trs.forEach(tr=>{
         const cells = Array.from(tr.querySelectorAll('td,th')).map(td=>norm(td.textContent));
         if(cells.length < DM_COLS || cells.length % DM_COLS !== 0) return;
-
         const rec = cells.slice(0, DM_COLS);
         const seq = rec[0].replace(/\.0+$/,'').trim();
         if(!seq || isNaN(Number(seq))) return;
-
-        const pea = normPea(rec[COL_PEA]);
+        const pea = normPea(rec[8]);
         if(!pea || seenPea.has(pea)) return;
         seenPea.add(pea);
-
-        const stFull = rec[COL_STATUS].trim();
+        const stFull = rec[14].trim();
         const stCode = extractDmCode(stFull);
-        const stNorm = normStatusDm(stFull);
-
         out.push({
             pea,
             statusRaw  : stCode,
             statusFull : stFull,
-            statusNorm : stNorm,
-            ca   : norm(rec[COL_CA]),
-            name : norm(rec[COL_NAME]),
+            statusNorm : normStatusDm(stFull),
+            ca   : norm(rec[5]),
+            name : norm(rec[6]),
             src  : srcName
         });
     });
+    console.log('[DM-A] ' + srcName + ': ' + out.length + ' records');
+    return out;
+}
+
+/* ══════════════════════════════════════════════════
+   PARSE DM HTML — FORMAT B (17 cols) — FUCN only
+   col[8]=PEA  col[13]=สถานะล่าสุด  (e.g. "FUCNต่อสายแล้ว")
+   col[5]=CA   col[6]=ชื่อ
+   ⚠ Focus เฉพาะ record ที่ขึ้นต้นด้วย FUCN เท่านั้น
+     เพื่อ Match กับสถานะ "ต่อสาย" ใน SAP
+══════════════════════════════════════════════════ */
+function parseDmHtmlFucn(html, srcName){
+    const DM_COLS = 17;
+    const doc = new DOMParser().parseFromString(html,'text/html');
+    const trs = doc.querySelectorAll('tr');
+    const out = [];
+    const seenPea = new Set();
+
+    trs.forEach(tr=>{
+        const cells = Array.from(tr.querySelectorAll('td,th')).map(td=>norm(td.textContent));
+        if(cells.length < DM_COLS || cells.length % DM_COLS !== 0) return;
+        const rec = cells.slice(0, DM_COLS);
+        const seq = rec[0].replace(/\.0+$/,'').trim();
+        if(!seq || isNaN(Number(seq))) return;
+        const pea = normPea(rec[8]);
+        if(!pea || seenPea.has(pea)) return;
+        seenPea.add(pea);
+
+        const stFull = rec[13].trim();              // col N = สถานะล่าสุด
+        const code4  = stFull.substring(0,4).toUpperCase();
+
+        // Focus เฉพาะ FUCN (ต่อสาย)
+        if(code4 !== 'FUCN') return;
+
+        out.push({
+            pea,
+            statusRaw  : 'FUCN',
+            statusFull : stFull,
+            statusNorm : 'ต่อสาย',
+            ca   : norm(rec[5]),
+            name : norm(rec[6]),
+            src  : srcName
+        });
+    });
+    console.log('[DM-B/FUCN] ' + srcName + ': ' + out.length + ' records (FUCN only)');
     return out;
 }
 
@@ -382,8 +464,8 @@ let allRows=[];
 async function processData(){
     const alertBox=document.getElementById('alertBox');
     alertBox.innerHTML='';
-    if(!fileStore.sap.length||!fileStore.dm.length){
-        alertBox.innerHTML='<div class="alert alert-error">⚠ กรุณาเลือกไฟล์ SAP และ DM อย่างน้อยฝั่งละ 1 ไฟล์</div>';
+    if(!fileStore.sap.length || (!fileStore.dm.length && !fileStore.dmfucn.length)){
+        alertBox.innerHTML='<div class="alert alert-error">⚠ กรุณาเลือกไฟล์ SAP และไฟล์ DM อย่างน้อย 1 ช่อง</div>';
         return;
     }
 
@@ -391,7 +473,7 @@ async function processData(){
     btn.disabled=true; btn.textContent='⏳ กำลังประมวลผล...';
 
     try{
-        /* โหลด XLSX ถ้ายังไม่มี (ต้องใช้กับไฟล์ SAP binary) */
+        /* โหลด XLSX ถ้ายังไม่มี */
         if(!XLSX_LIB){
             document.getElementById('xlsxStatus').textContent='⏳ กำลังโหลด SheetJS...';
             const ok = await loadXlsx();
@@ -403,19 +485,6 @@ async function processData(){
         for(const f of fileStore.sap){
             const isHtml = await sniffIsHtml(f);
             if(isHtml){
-                // SAP เป็น HTML (ไม่ปกติ แต่รองรับไว้)
-                const txt = await readFileAsText(f);
-                const doc = new DOMParser().parseFromString(txt,'text/html');
-                const trs = doc.querySelectorAll('tr');
-                let hIdx=-1; let hRow=null;
-                trs.forEach((tr,i)=>{
-                    if(hIdx>-1) return;
-                    const cells=Array.from(tr.querySelectorAll('td,th')).map(td=>norm(td.textContent));
-                    if(cells.some(v=>v.includes('การดำเนินการ'))&&cells.some(v=>v.includes('เลขที่มิเตอร์ที่ดำเนินการ'))){ hIdx=i; hRow=cells; }
-                });
-                if(!hRow) throw new Error(`ไม่พบ header ในไฟล์ SAP: ${f.name}`);
-                // parse rows ถัดจาก header ...
-                // (ไม่ implement เต็ม เพราะ SAP ปกติเป็น binary)
                 alertBox.innerHTML+=`<div class="alert alert-info">ℹ ไฟล์ ${f.name} เป็น HTML — อาจอ่านได้ไม่ครบ</div>`;
             } else {
                 if(!XLSX_LIB) throw new Error('ไม่สามารถอ่านไฟล์ SAP binary ได้เพราะ SheetJS โหลดไม่สำเร็จ');
@@ -424,7 +493,7 @@ async function processData(){
             }
         }
 
-        /* ─── อ่าน DM ─── */
+        /* ─── อ่าน DM format A (ปลดสาย/ผ่อนผัน — FURM/WMST/WMS2) ─── */
         const dmData=[];
         for(const f of fileStore.dm){
             const isHtml = await sniffIsHtml(f);
@@ -432,7 +501,6 @@ async function processData(){
                 const txt = await readFileAsText(f);
                 parseDmHtml(txt, f.name).forEach(r=>dmData.push(r));
             } else {
-                // DM เป็น XLSX ปกติ
                 if(!XLSX_LIB) throw new Error('ไม่สามารถอ่านไฟล์ DM xlsx ได้เพราะ SheetJS โหลดไม่สำเร็จ');
                 const buf = await readFileAsBuffer(f);
                 const wb  = XLSX_LIB.read(new Uint8Array(buf),{type:'array',raw:true});
@@ -444,18 +512,27 @@ async function processData(){
                 }
                 if(hIdx===-1) throw new Error(`ไม่พบ header ใน DM: ${f.name}`);
                 const h=rows[hIdx].map(v=>norm(String(v)));
-                const cPea =h.findIndex(v=>v==='PEA No');
-                const cSt  =h.findIndex(v=>v.includes('ผลการปฏิบัติงาน'));
-                const cCa  =h.findIndex(v=>v==='CA');
-                const cName=h.findIndex(v=>v.includes('ชื่อ ผชฟ')||v.includes('ชื่อ-สกุล'));
+                const cPea=h.findIndex(v=>v==='PEA No'), cSt=h.findIndex(v=>v.includes('ผลการปฏิบัติงาน'));
+                const cCa=h.findIndex(v=>v==='CA'), cName=h.findIndex(v=>v.includes('ชื่อ ผชฟ')||v.includes('ชื่อ-สกุล'));
                 for(let i=hIdx+1;i<rows.length;i++){
                     const r=rows[i];
                     const seq=norm(String(r[0]??'')).replace(/\.0+$/,'');
                     if(!seq||isNaN(Number(seq))) continue;
                     const pea=normPea(r[cPea]); if(!pea) continue;
                     const stRaw=norm(String(r[cSt]??'')).toUpperCase();
-                    dmData.push({ pea, statusRaw:stRaw, statusNorm:normStatusDm(stRaw), ca:norm(String(r[cCa]??'')), name:norm(String(cName>=0?r[cName]??'':'')), src:f.name });
+                    dmData.push({pea,statusRaw:stRaw,statusFull:stRaw,statusNorm:normStatusDm(stRaw),ca:norm(String(r[cCa]??'')),name:norm(String(cName>=0?r[cName]??'':'')),src:f.name});
                 }
+            }
+        }
+
+        /* ─── อ่าน DM format B (ต่อสาย FUCN — col 13 สถานะล่าสุด) ─── */
+        for(const f of fileStore.dmfucn){
+            const isHtml = await sniffIsHtml(f);
+            if(isHtml){
+                const txt = await readFileAsText(f);
+                parseDmHtmlFucn(txt, f.name).forEach(r=>dmData.push(r));
+            } else {
+                alertBox.innerHTML+=`<div class="alert alert-info">ℹ ไฟล์ ${f.name}: DM format B รองรับเฉพาะ HTML (.xls)</div>`;
             }
         }
 
@@ -466,41 +543,26 @@ async function processData(){
         const sapIdx=new Map(); sapData.forEach(r=>{if(!sapIdx.has(r.pea)) sapIdx.set(r.pea,r);});
         const dmIdx =new Map(); dmData.forEach(r=> {if(!dmIdx.has(r.pea))  dmIdx.set(r.pea,r);});
 
-        allRows=[]; let cM=0,cNS=0,cND=0;
+        allRows=[]; let cM=0,cNS=0;
 
         /* SAP → จับคู่กับ DM
-           ✓ ตรงกัน     = พบ PEA ทั้งสองฝั่ง และ status (หลัง normalize) ตรงกัน
-           ➡ ไม่พบใน DM = ไม่พบ PEA ใน DM  หรือ  พบแต่ status ไม่ตรงกัน          */
+           ✓ ตรงกัน  = พบ PEA ทั้งสองฝั่ง และ status (หลัง normalize) ตรงกัน
+           (รายการที่ไม่พบใน DM หรือ status ไม่ตรงกัน จะไม่แสดงในผลลัพธ์)       */
         sapData.forEach(s=>{
             const d=dmIdx.get(s.pea);
-            if(!d){
-                /* ไม่พบ PEA ใน DM */
-                cND++;
-                allRows.push({pea:s.pea,nameSap:s.name,nameDm:'—',caSap:s.ca,caDm:'—',
-                              sapStRaw:s.statusRaw,sapStNorm:s.statusNorm,
-                              dmStRaw:'—',dmStNorm:'—',
-                              sapSrc:s.src,dmSrc:'—',result:'nodm'});
-                return;
-            }
+            if(!d) return;   // ไม่พบใน DM → ข้าม
             const ok = s.statusNorm!=='' && s.statusNorm===d.statusNorm;
             if(ok){
-                /* ✓ ตรงกัน */
                 cM++;
                 allRows.push({pea:s.pea,nameSap:s.name,nameDm:d.name,caSap:s.ca,caDm:d.ca,
                               sapStRaw:s.statusRaw,sapStNorm:s.statusNorm,
                               dmStRaw:d.statusRaw,dmStNorm:d.statusNorm,
                               sapSrc:s.src,dmSrc:d.src,result:'match'});
-            } else {
-                /* พบ PEA แต่ status ไม่ตรงกัน → จัดเป็น "ไม่พบใน DM" (status ผิด) */
-                cND++;
-                allRows.push({pea:s.pea,nameSap:s.name,nameDm:d.name,caSap:s.ca,caDm:d.ca,
-                              sapStRaw:s.statusRaw,sapStNorm:s.statusNorm,
-                              dmStRaw:d.statusRaw,dmStNorm:d.statusNorm,
-                              sapSrc:s.src,dmSrc:d.src,result:'nodm'});
             }
+            // status ไม่ตรงกัน → ข้าม (ไม่แสดง)
         });
 
-        /* DM ที่ไม่มีใน SAP */
+        /* DM ที่ไม่มีใน SAP → ยังแสดงในแท็บ "ไม่พบใน SAP" */
         dmData.forEach(d=>{
             if(!sapIdx.has(d.pea)){
                 cNS++;
@@ -511,10 +573,10 @@ async function processData(){
             }
         });
 
-        [sapData.length,dmData.length,cM,cNS,cND].forEach((v,i)=>
-            document.getElementById(['cntSap','cntDm','cntMatch','cntNoSap','cntNoDm'][i]).textContent=v);
-        [cM,cNS,cND].forEach((v,i)=>
-            document.getElementById(['tcMatch','tcNoSap','tcNoDm'][i]).textContent=v);
+        [sapData.length,dmData.length,cM,cNS].forEach((v,i)=>
+            document.getElementById(['cntSap','cntDm','cntMatch','cntNoSap'][i]).textContent=v);
+        [cM,cNS].forEach((v,i)=>
+            document.getElementById(['tcMatch','tcNoSap'][i]).textContent=v);
 
         document.getElementById('resultView').style.display='block';
         showTab('match');
@@ -536,16 +598,16 @@ function stCell(raw,norm_){
     return `<span class="st"><span class="st-code">${esc(raw)}</span>${esc(norm_)}</span>`;
 }
 
-const TAB_CLS={ match:'t-match', nosap:'t-nosap', nodm:'t-nodm' };
+const TAB_CLS={ match:'t-match', nosap:'t-nosap' };
 const BADGES={
-    match   :'<span class="badge badge-ok">✓ ตรงกัน</span>',
-    nosap   :'<span class="badge badge-nosap">⬅ ไม่พบใน SAP</span>',
-    nodm    :'<span class="badge badge-nodm">➡ ไม่พบใน DM</span>',
+    match :'<span class="badge badge-ok">✓ ตรงกัน</span>',
+    nosap :'<span class="badge badge-nosap">⬅ ไม่พบใน SAP</span>',
 };
 
 function showTab(tab){
-    ['match','nosap','nodm'].forEach(t=>{
+    ['match','nosap'].forEach(t=>{
         const el=document.getElementById('tab-'+t);
+        if(!el) return;
         el.className='tab';
         if(t===tab) el.classList.add(TAB_CLS[t]);
     });
@@ -561,29 +623,13 @@ function showTab(tab){
             <td>${i+1}</td><td><code>${esc(r.pea)}</code></td><td><code>${esc(r.caDm)}</code></td>
             <td class="name-col">${esc(r.nameDm)}</td><td>${stCell(r.dmStRaw,r.dmStNorm)}</td>
             <td style="font-size:.76rem;color:#64748b">${esc(r.dmSrc)}</td><td>${BADGES.nosap}</td></tr>`));
-    } else if(tab==='nodm'){
-        /* แสดงทั้ง SAP และ DM เพราะบางรายการ "พบ PEA แต่ status ต่างกัน" */
-        thead.innerHTML=`<tr><th>#</th><th>PEA No</th><th>CA (SAP)</th><th>ชื่อ-สกุล (SAP)</th><th>ชื่อ ผชฟ. (DM)</th><th>สถานะ SAP</th><th>สถานะ DM</th><th>หมายเหตุ</th></tr>`;
-        rows.forEach((r,i)=>{
-            const hasDm = r.dmStRaw && r.dmStRaw !== '—';
-            const note  = hasDm
-                ? '<span class="badge badge-fail">✗ Status ต่างกัน</span>'
-                : BADGES.nodm;
-            tbody.insertAdjacentHTML('beforeend',`<tr>
-                <td>${i+1}</td><td><code>${esc(r.pea)}</code></td><td><code>${esc(r.caSap)}</code></td>
-                <td class="name-col">${esc(r.nameSap)}</td>
-                <td class="name-col">${esc(r.nameDm)}</td>
-                <td>${stCell(r.sapStRaw,r.sapStNorm)}</td>
-                <td>${stCell(r.dmStRaw,r.dmStNorm)}</td>
-                <td>${note}</td></tr>`);
-        });
     } else {
         thead.innerHTML=`<tr><th>#</th><th>PEA No</th><th>CA (SAP)</th><th>ชื่อ-สกุล (SAP)</th><th>ชื่อ ผชฟ. (DM)</th><th>สถานะ SAP</th><th>สถานะ DM</th><th>ผลลัพธ์</th></tr>`;
         rows.forEach((r,i)=>tbody.insertAdjacentHTML('beforeend',`<tr>
             <td>${i+1}</td><td><code>${esc(r.pea)}</code></td><td><code>${esc(r.caSap)}</code></td>
             <td class="name-col">${esc(r.nameSap)}</td><td class="name-col">${esc(r.nameDm)}</td>
             <td>${stCell(r.sapStRaw,r.sapStNorm)}</td><td>${stCell(r.dmStRaw,r.dmStNorm)}</td>
-            <td>${BADGES[tab]}</td></tr>`));
+            <td>${BADGES.match}</td></tr>`));
     }
 }
 
@@ -614,13 +660,13 @@ function refreshPage(){ location.reload(); }
 ══════════════════════════════════════════════════ */
 function exportXLS(){
     if(!allRows.length) return;
-    const label={match:'ตรงกัน',nosap:'ไม่พบใน SAP',nodm:'ไม่พบใน DM / Status ต่างกัน'};
+    const label={match:'ตรงกัน',nosap:'ไม่พบใน SAP'};
     const cols=['PEA No','CA SAP','CA DM','ชื่อ-สกุล (SAP)','ชื่อ ผชฟ. (DM)',
                 'รหัสสถานะ SAP','สถานะ SAP','รหัสสถานะ DM','สถานะ DM',
                 'ไฟล์ SAP','ไฟล์ DM','ผลลัพธ์'];
 
-    const bgColor = { match:'#dcfce7', nosap:'#e0f2fe', nodm:'#fef9c3' };
-    const fgColor = { match:'#166534', nosap:'#075985', nodm:'#854d0e' };
+    const bgColor = { match:'#dcfce7', nosap:'#e0f2fe' };
+    const fgColor = { match:'#166534', nosap:'#075985' };
 
     const escXml = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
@@ -660,26 +706,20 @@ function exportXLS(){
 ══════════════════════════════════════════════════ */
 function exportPDF(){
     if(!allRows.length) return;
-    const label={match:'ตรงกัน',nosap:'ไม่พบใน SAP',nodm:'ไม่พบใน DM / Status ต่างกัน'};
+    const label={match:'ตรงกัน',nosap:'ไม่พบใน SAP'};
     const escH = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
     const tabMeta = [
-        { key:'match',  title:'✓ ตรงกัน',       color:'#166534', bg:'#dcfce7', border:'#22c55e' },
-        { key:'nosap',  title:'⬅ ไม่พบใน SAP',  color:'#075985', bg:'#e0f2fe', border:'#0284c7' },
-        { key:'nodm',   title:'➡ ไม่พบใน DM',   color:'#854d0e', bg:'#fef9c3', border:'#eab308' },
+        { key:'match', title:'✓ ตรงกัน',      color:'#166534', bg:'#dcfce7', border:'#22c55e' },
+        { key:'nosap', title:'⬅ ไม่พบใน SAP', color:'#075985', bg:'#e0f2fe', border:'#0284c7' },
     ];
 
-    /* หัวตารางแต่ละ tab */
     function headHtml(key){
         if(key==='nosap') return '<tr><th>#</th><th>PEA No</th><th>CA (DM)</th><th>ชื่อ ผชฟ. (DM)</th><th>สถานะ DM</th><th>ผลลัพธ์</th></tr>';
-        if(key==='nodm')  return '<tr><th>#</th><th>PEA No</th><th>CA (SAP)</th><th>ชื่อ-สกุล (SAP)</th><th>ชื่อ ผชฟ. (DM)</th><th>สถานะ SAP</th><th>สถานะ DM</th><th>หมายเหตุ</th></tr>';
         return '<tr><th>#</th><th>PEA No</th><th>CA (SAP)</th><th>ชื่อ-สกุล (SAP)</th><th>ชื่อ ผชฟ. (DM)</th><th>สถานะ SAP</th><th>สถานะ DM</th><th>ผลลัพธ์</th></tr>';
     }
     function rowHtml(r, i, key){
-        const hasDm = r.dmStRaw && r.dmStRaw !== '—';
-        const note  = hasDm && key==='nodm' ? '✗ Status ต่างกัน' : label[r.result];
         if(key==='nosap') return `<tr><td>${i+1}</td><td>${escH(r.pea)}</td><td>${escH(r.caDm)}</td><td>${escH(r.nameDm)}</td><td>${escH(r.dmStRaw)} ${r.dmStRaw!==r.dmStNorm?'('+escH(r.dmStNorm)+')':''}</td><td>${escH(label[r.result])}</td></tr>`;
-        if(key==='nodm')  return `<tr><td>${i+1}</td><td>${escH(r.pea)}</td><td>${escH(r.caSap)}</td><td>${escH(r.nameSap)}</td><td>${escH(r.nameDm)}</td><td>${escH(r.sapStRaw)} ${r.sapStRaw!==r.sapStNorm?'('+escH(r.sapStNorm)+')':''}</td><td>${r.dmStRaw!=='—'?escH(r.dmStRaw)+' '+(r.dmStRaw!==r.dmStNorm?'('+escH(r.dmStNorm)+')':''):'-'}</td><td>${escH(note)}</td></tr>`;
         return `<tr><td>${i+1}</td><td>${escH(r.pea)}</td><td>${escH(r.caSap)}</td><td>${escH(r.nameSap)}</td><td>${escH(r.nameDm)}</td><td>${escH(r.sapStRaw)} ${r.sapStRaw!==r.sapStNorm?'('+escH(r.sapStNorm)+')':''}</td><td>${escH(r.dmStRaw)} ${r.dmStRaw!==r.dmStNorm?'('+escH(r.dmStNorm)+')':''}</td><td>${escH(label[r.result])}</td></tr>`;
     }
 
